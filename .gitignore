@@ -1,2 +1,28 @@
 *.log
 *.db
+
+# Go build artifacts
+speed-checker
+dist/
+build/
+
+# Frontend build artifacts
+frontend/build/
+frontend/.svelte-kit/
+frontend/node_modules/
+frontend/.env
+frontend/.env.local
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/

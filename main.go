@@ -1,174 +1,149 @@
 package main
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
+	"context"
 	"log"
-	"os/exec"
+	"net/http"
 	"time"
 
+	"github.com/go-playground/validator/v10"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	_ "github.com/mattn/go-sqlite3"
+
+	"github.com/bfirestone/speed-checker/ent"
+	"github.com/bfirestone/speed-checker/internal/config"
+	"github.com/bfirestone/speed-checker/internal/handlers"
+	"github.com/bfirestone/speed-checker/internal/services"
 )
 
-type SpeedTestResult struct {
-	Timestamp    time.Time `json:"timestamp"`
-	Download     float64   `json:"download"`
-	Upload       float64   `json:"upload"`
-	Ping         float64   `json:"ping"`
-	Jitter       float64   `json:"jitter"`
-	ServerName   string    `json:"server_name"`
-	ServerID     string    `json:"server_id"`
-	ISP          string    `json:"isp"`
-	ExternalIP   string    `json:"external_ip"`
-	ResultURL    string    `json:"result_url"`
+// CustomValidator wraps the validator instance
+type CustomValidator struct {
+	validator *validator.Validate
 }
 
-type OoklaResult struct {
-	Timestamp time.Time `json:"timestamp"`
-	Ping      struct {
-		Jitter  float64 `json:"jitter"`
-		Latency float64 `json:"latency"`
-	} `json:"ping"`
-	Download struct {
-		Bandwidth int64 `json:"bandwidth"`
-	} `json:"download"`
-	Upload struct {
-		Bandwidth int64 `json:"bandwidth"`
-	} `json:"upload"`
-	Server struct {
-		Name string `json:"name"`
-		ID   int    `json:"id"`
-	} `json:"server"`
-	ISP    string `json:"isp"`
-	Result struct {
-		URL string `json:"url"`
-	} `json:"result"`
-	Interface struct {
-		ExternalIP string `json:"externalIp"`
-	} `json:"interface"`
-}
-
-func initDB() (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./speedtest_results.db")
-	if err != nil {
-		return nil, err
+// Validate validates the struct
+func (cv *CustomValidator) Validate(i interface{}) error {
+	if err := cv.validator.Struct(i); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-
-	createTableSQL := `
-	CREATE TABLE IF NOT EXISTS speed_tests (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		timestamp DATETIME NOT NULL,
-		download_mbps REAL NOT NULL,
-		upload_mbps REAL NOT NULL,
-		ping_ms REAL NOT NULL,
-		jitter_ms REAL,
-		server_name TEXT,
-		server_id TEXT,
-		isp TEXT,
-		external_ip TEXT,
-		result_url TEXT
-	);`
-
-	_, err = db.Exec(createTableSQL)
-	return db, err
-}
-
-func runSpeedTest() (*SpeedTestResult, error) {
-	// Run speedtest-cli with JSON output
-	cmd := exec.Command("speedtest", "--format=json", "--accept-license", "--accept-gdpr")
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, fmt.Errorf("failed to run speedtest: %v", err)
-	}
-
-	var ooklaResult OoklaResult
-	if err := json.Unmarshal(output, &ooklaResult); err != nil {
-		return nil, fmt.Errorf("failed to parse speedtest output: %v", err)
-	}
-
-	// Convert bandwidth from bits/second to Mbps
-	downloadMbps := float64(ooklaResult.Download.Bandwidth) * 8 / 1000000
-	uploadMbps := float64(ooklaResult.Upload.Bandwidth) * 8 / 1000000
-
-	result := &SpeedTestResult{
-		Timestamp:    ooklaResult.Timestamp,
-		Download:     downloadMbps,
-		Upload:       uploadMbps,
-		Ping:         ooklaResult.Ping.Latency,
-		Jitter:       ooklaResult.Ping.Jitter,
-		ServerName:   ooklaResult.Server.Name,
-		ServerID:     fmt.Sprintf("%d", ooklaResult.Server.ID),
-		ISP:          ooklaResult.ISP,
-		ExternalIP:   ooklaResult.Interface.ExternalIP,
-		ResultURL:    ooklaResult.Result.URL,
-	}
-
-	return result, nil
-}
-
-func saveResult(db *sql.DB, result *SpeedTestResult) error {
-	insertSQL := `
-	INSERT INTO speed_tests (
-		timestamp, download_mbps, upload_mbps, ping_ms, jitter_ms,
-		server_name, server_id, isp, external_ip, result_url
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-	_, err := db.Exec(insertSQL,
-		result.Timestamp,
-		result.Download,
-		result.Upload,
-		result.Ping,
-		result.Jitter,
-		result.ServerName,
-		result.ServerID,
-		result.ISP,
-		result.ExternalIP,
-		result.ResultURL,
-	)
-	return err
+	return nil
 }
 
 func main() {
-	// Initialize database
-	db, err := initDB()
+	// Load configuration
+	cfg := config.Default()
+
+	// Initialize database client
+	client, err := ent.Open("sqlite3", cfg.Database.DSN)
 	if err != nil {
-		log.Fatal("Failed to initialize database:", err)
+		log.Fatalf("Failed to open database: %v", err)
 	}
-	defer db.Close()
+	defer client.Close()
 
-	// Set test interval (15-30 minutes)
-	interval := 10 * time.Minute // Change this as needed
-	log.Printf("Starting speed test monitor with %v intervals", interval)
+	// Run database migration
+	if err := client.Schema.Create(context.Background()); err != nil {
+		log.Fatalf("Failed to create schema: %v", err)
+	}
 
-	// Run initial test
-	runTest(db)
+	// Initialize services
+	speedTestService := services.NewSpeedTestService(client)
+	iperfService := services.NewIperfService(client)
 
-	// Set up ticker for regular tests
-	ticker := time.NewTicker(interval)
-	defer ticker.Stop()
+	// Initialize handlers
+	apiHandler := handlers.NewAPIHandler(speedTestService, iperfService)
 
-	// Run tests on schedule
-	for range ticker.C {
-		runTest(db)
+	// Initialize Echo
+	e := echo.New()
+
+	// Set custom validator
+	e.Validator = &CustomValidator{validator: validator.New()}
+
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORS())
+
+	// API routes
+	api := e.Group("/api/v1")
+
+	// Speed test routes
+	api.GET("/speedtest", apiHandler.GetSpeedTests)
+	api.GET("/speedtest/range", apiHandler.GetSpeedTestsInRange)
+	api.POST("/speedtest/run", apiHandler.RunSpeedTest)
+
+	// Iperf test routes
+	api.GET("/iperf", apiHandler.GetIperfTests)
+	api.POST("/iperf/run", apiHandler.RunIperfTests)
+
+	// Host management routes
+	api.GET("/hosts", apiHandler.GetHosts)
+	api.POST("/hosts", apiHandler.AddHost)
+	api.PUT("/hosts/:id", apiHandler.UpdateHost)
+	api.DELETE("/hosts/:id", apiHandler.DeleteHost)
+
+	// Dashboard route
+	api.GET("/dashboard", apiHandler.GetDashboard)
+
+	// Static files (for SvelteKit frontend)
+	e.Static("/", "frontend/build")
+
+	// Start background testing goroutines
+	go startBackgroundTesting(speedTestService, iperfService, cfg)
+
+	// Start server
+	log.Printf("Starting server on %s:%s", cfg.Server.Host, cfg.Server.Port)
+	if err := e.Start(":" + cfg.Server.Port); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
 }
 
-func runTest(db *sql.DB) {
-	log.Println("Running speed test...")
-	
-	result, err := runSpeedTest()
-	if err != nil {
-		log.Printf("Speed test failed: %v", err)
-		return
-	}
+func startBackgroundTesting(speedTestService *services.SpeedTestService, iperfService *services.IperfService, cfg *config.Config) {
+	// Speed test ticker
+	speedTestTicker := time.NewTicker(cfg.Testing.SpeedTestInterval)
+	defer speedTestTicker.Stop()
 
-	err = saveResult(db, result)
-	if err != nil {
-		log.Printf("Failed to save result: %v", err)
-		return
-	}
+	// Iperf test ticker
+	iperfTestTicker := time.NewTicker(cfg.Testing.IperfTestInterval)
+	defer iperfTestTicker.Stop()
 
-	log.Printf("Test completed - Download: %.2f Mbps, Upload: %.2f Mbps, Ping: %.2f ms",
-		result.Download, result.Upload, result.Ping)
+	// Run initial tests
+	go func() {
+		ctx := context.Background()
+		log.Println("Running initial speed test...")
+		if _, err := speedTestService.RunTest(ctx); err != nil {
+			log.Printf("Initial speed test failed: %v", err)
+		}
+	}()
+
+	go func() {
+		ctx := context.Background()
+		log.Println("Running initial iperf tests...")
+		if err := iperfService.RunRandomTests(ctx, cfg.Testing.IperfTestDuration); err != nil {
+			log.Printf("Initial iperf tests failed: %v", err)
+		}
+	}()
+
+	// Handle scheduled tests
+	for {
+		select {
+		case <-speedTestTicker.C:
+			go func() {
+				ctx := context.Background()
+				log.Println("Running scheduled speed test...")
+				if _, err := speedTestService.RunTest(ctx); err != nil {
+					log.Printf("Scheduled speed test failed: %v", err)
+				}
+			}()
+
+		case <-iperfTestTicker.C:
+			go func() {
+				ctx := context.Background()
+				log.Println("Running scheduled iperf tests...")
+				if err := iperfService.RunRandomTests(ctx, cfg.Testing.IperfTestDuration); err != nil {
+					log.Printf("Scheduled iperf tests failed: %v", err)
+				}
+			}()
+		}
+	}
 }
