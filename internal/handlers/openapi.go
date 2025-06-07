@@ -362,10 +362,17 @@ func (h *OpenAPIHandler) GetDashboard(ctx echo.Context) error {
 		recentIperfTests[i] = entIperfTestToAPI(test)
 	}
 
+	// Convert hosts to API models
+	activeHosts := make([]api.Host, len(hosts))
+	for i, host := range hosts {
+		activeHosts[i] = entHostToAPI(host)
+	}
+
 	// Create dashboard response
 	dashboard := api.DashboardData{
 		RecentSpeedTests: recentSpeedTests,
 		RecentIperfTests: recentIperfTests,
+		ActiveHosts:      activeHosts,
 		Statistics: struct {
 			ActiveHosts     *int     `json:"active_hosts,omitempty"`
 			AvgDownloadMbps *float64 `json:"avg_download_mbps,omitempty"`

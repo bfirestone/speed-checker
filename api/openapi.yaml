@@ -670,6 +670,7 @@ components:
       required:
         - recent_speed_tests
         - recent_iperf_tests
+        - active_hosts
         - statistics
       properties:
         recent_speed_tests:
@@ -682,6 +683,11 @@ components:
           items:
             $ref: '#/components/schemas/IperfTestResult'
           description: Recent iperf test results
+        active_hosts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Host'
+          description: List of active hosts available for testing
         statistics:
           type: object
           properties:

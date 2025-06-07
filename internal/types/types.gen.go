@@ -32,6 +32,9 @@ const (
 
 // DashboardData defines model for DashboardData.
 type DashboardData struct {
+	// ActiveHosts List of active hosts available for testing
+	ActiveHosts []Host `json:"active_hosts"`
+
 	// RecentIperfTests Recent iperf test results
 	RecentIperfTests []IperfTestResult `json:"recent_iperf_tests"`
 
