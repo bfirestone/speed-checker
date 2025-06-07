@@ -92,6 +92,17 @@ paths:
           description: Filter by daemon ID
           schema:
             type: string
+        - name: server_name
+          in: query
+          description: Filter by server name (partial match)
+          schema:
+            type: string
+        - name: slowest
+          in: query
+          description: Sort by slowest results first
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Speed test results retrieved successfully
@@ -222,6 +233,22 @@ paths:
           description: Filter by daemon ID
           schema:
             type: string
+        - name: host_name
+          in: query
+          description: Filter by host name (partial match)
+          schema:
+            type: string
+        - name: host_type
+          in: query
+          description: Filter by host type
+          schema:
+            $ref: '#/components/schemas/HostType'
+        - name: slowest
+          in: query
+          description: Sort by slowest results first
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Iperf test results retrieved successfully

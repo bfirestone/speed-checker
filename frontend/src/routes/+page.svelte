@@ -94,14 +94,14 @@
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-			dashboardData = await response.json();
-			// Debug logging
-			if (dashboardData && dashboardData.recent_iperf_tests && dashboardData.recent_iperf_tests.length > 0) {
-				console.log('Dashboard iperf test sample:', dashboardData.recent_iperf_tests[0]);
-			}
-			// Apply filters when data is loaded
-			applySpeedTestFilters();
-			applyIperfFilters();
+					dashboardData = await response.json();
+		// Debug logging
+		if (dashboardData && dashboardData.recent_iperf_tests && dashboardData.recent_iperf_tests.length > 0) {
+			console.log('Dashboard iperf test sample:', dashboardData.recent_iperf_tests[0]);
+		}
+		// Apply initial filters
+		applySpeedTestFilters();
+		applyIperfFilters();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'An error occurred';
 			console.error('Failed to fetch dashboard data:', e);
@@ -125,13 +125,16 @@
 				params.append('slowest', 'true');
 			}
 
+			console.log('Applying speed test filters:', params.toString());
+			
 			const response = await fetch(apiUrl(`/api/v1/speedtest/results?${params}`));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			
 			const result = await response.json();
-			filteredSpeedTests = result.results || result.data || [];
+			filteredSpeedTests = result.results || [];
+			console.log('Speed test filter results:', filteredSpeedTests.length, 'tests');
 		} catch (e) {
 			console.error('Failed to fetch filtered speed tests:', e);
 			filteredSpeedTests = dashboardData?.recent_speed_tests || [];
@@ -163,7 +166,7 @@
 			}
 			
 			const result = await response.json();
-			filteredIperfTests = result.results || result.data || [];
+			filteredIperfTests = result.results || [];
 			// Debug logging
 			if (filteredIperfTests.length > 0) {
 				console.log('Sample iperf test:', filteredIperfTests[0]);
@@ -416,6 +419,7 @@
 									id="speed-server-name"
 									type="text"
 									bind:value={speedTestFilters.serverName}
+									on:input={applySpeedTestFilters}
 									placeholder="Search by server name..."
 									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								/>
@@ -425,6 +429,7 @@
 								<select
 									id="speed-limit"
 									bind:value={speedTestFilters.limit}
+									on:change={applySpeedTestFilters}
 									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								>
 									<option value={5}>5 results</option>
@@ -438,6 +443,7 @@
 							<input
 								type="checkbox"
 								bind:checked={speedTestFilters.showSlowest}
+								on:change={applySpeedTestFilters}
 								id="speed-slowest"
 								class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
 							/>
@@ -505,6 +511,7 @@
 									id="iperf-host-name"
 									type="text"
 									bind:value={iperfFilters.hostName}
+									on:input={applyIperfFilters}
 									placeholder="Search by host name..."
 									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								/>
@@ -514,6 +521,7 @@
 								<select
 									id="iperf-host-type"
 									bind:value={iperfFilters.hostType}
+									on:change={applyIperfFilters}
 									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								>
 									<option value="">All Types</option>
@@ -529,6 +537,7 @@
 								<select
 									id="iperf-limit"
 									bind:value={iperfFilters.limit}
+									on:change={applyIperfFilters}
 									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
 								>
 									<option value={5}>5 results</option>
@@ -541,6 +550,7 @@
 								<input
 									type="checkbox"
 									bind:checked={iperfFilters.showSlowest}
+									on:change={applyIperfFilters}
 									id="iperf-slowest"
 									class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
 								/>

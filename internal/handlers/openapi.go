@@ -45,8 +45,18 @@ func (h *OpenAPIHandler) GetSpeedTests(ctx echo.Context, params api.GetSpeedTest
 		offset = *params.Offset
 	}
 
-	// For now, use the existing service methods - we'll enhance these later
-	tests, err := h.speedTestService.GetRecentTests(ctx.Request().Context(), limit)
+	// Apply filtering logic similar to legacy API
+	var tests []*ent.SpeedTest
+	var err error
+
+	if params.ServerName != nil && *params.ServerName != "" {
+		tests, err = h.speedTestService.GetTestsByServerName(ctx.Request().Context(), *params.ServerName, limit)
+	} else if params.Slowest != nil && *params.Slowest {
+		tests, err = h.speedTestService.GetSlowestTests(ctx.Request().Context(), limit)
+	} else {
+		tests, err = h.speedTestService.GetRecentTests(ctx.Request().Context(), limit)
+	}
+
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, api.Error{
 			Error:   "internal_error",
@@ -135,8 +145,20 @@ func (h *OpenAPIHandler) GetIperfTests(ctx echo.Context, params api.GetIperfTest
 		offset = *params.Offset
 	}
 
-	// For now, use the existing service methods
-	tests, err := h.iperfService.GetRecentTests(ctx.Request().Context(), limit)
+	// Apply filtering logic similar to legacy API
+	var tests []*ent.IperfTest
+	var err error
+
+	if params.HostName != nil && *params.HostName != "" {
+		tests, err = h.iperfService.GetTestsByHostName(ctx.Request().Context(), *params.HostName, limit)
+	} else if params.HostType != nil && string(*params.HostType) != "" {
+		tests, err = h.iperfService.GetTestsByHostType(ctx.Request().Context(), string(*params.HostType), limit)
+	} else if params.Slowest != nil && *params.Slowest {
+		tests, err = h.iperfService.GetSlowestTests(ctx.Request().Context(), limit)
+	} else {
+		tests, err = h.iperfService.GetRecentTests(ctx.Request().Context(), limit)
+	}
+
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, api.Error{
 			Error:   "internal_error",
@@ -414,28 +436,33 @@ func entSpeedTestToAPI(test *ent.SpeedTest) api.SpeedTestResult {
 }
 
 func entIperfTestToAPI(test *ent.IperfTest) api.IperfTestResult {
-	host := entHostToAPI(test.Edges.Host)
-
 	daemonId := test.DaemonID
 	if daemonId == "" {
 		daemonId = "daemon-legacy" // Fallback for tests without daemon_id
 	}
 
-	return api.IperfTestResult{
+	result := api.IperfTestResult{
 		Id:              test.ID,
 		Timestamp:       test.Timestamp,
-		HostId:          test.Edges.Host.ID,
 		SentMbps:        test.SentMbps,
 		ReceivedMbps:    test.ReceivedMbps,
 		Protocol:        api.IperfTestResultProtocol(test.Protocol),
 		DurationSeconds: test.DurationSeconds,
 		DaemonId:        daemonId,
 		CreatedAt:       test.Timestamp, // Use timestamp as created_at for now
-		Host:            host,
 		Success:         &test.Success,
 		MeanRttMs:       &test.MeanRttMs,
 		Retransmits:     &test.Retransmits,
 	}
+
+	// Check if host edge is loaded
+	if test.Edges.Host != nil {
+		result.HostId = test.Edges.Host.ID
+		host := entHostToAPI(test.Edges.Host)
+		result.Host = host
+	}
+
+	return result
 }
 
 func entHostToAPI(host *ent.Host) api.Host {
