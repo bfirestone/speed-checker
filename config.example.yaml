@@ -1,0 +1,15 @@
+# Example configuration file for Speed Checker
+# Copy this to config.yaml and modify as needed
+
+server:
+  host: "0.0.0.0"  # Server bind address
+  port: "8080"     # Server port
+
+database:
+  driver: "sqlite3"                              # Database driver
+  dsn: "./speedtest_results.db?_fk=1"           # Database connection string
+
+testing:
+  speedtest_interval: "15m"  # How often to run speed tests (15 minutes)
+  iperf_interval: "10m"      # How often to run iperf tests (10 minutes)
+  iperf_duration: 10         # Duration of each iperf test in seconds 

@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Documentation
+README.md
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+speed-checker
+dist/
+build/
+
+# Database files (these should be in volumes)
+*.db
+*.sqlite
+
+# Logs
+*.log
+out.log
+
+# Node modules in frontend (will be reinstalled in container)
+frontend/node_modules/
+frontend/.svelte-kit/
+frontend/.env
+frontend/.env.local
+
+# Temporary files
+tmp/
+temp/
+
+# Docker files (not needed in container)
+Dockerfile
+docker-compose.yml
+.dockerignore 
