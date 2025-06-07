@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
+	"github.com/bfirestone/speed-checker/ent"
 	"github.com/bfirestone/speed-checker/internal/services"
 )
 
@@ -31,7 +32,21 @@ func (h *APIHandler) GetSpeedTests(c echo.Context) error {
 		}
 	}
 
-	tests, err := h.speedTestService.GetRecentTests(c.Request().Context(), limit)
+	// Check for filtering parameters
+	serverName := c.QueryParam("server_name")
+	slowest := c.QueryParam("slowest") // "true" to get slowest tests
+
+	var tests []*ent.SpeedTest
+	var err error
+
+	if serverName != "" {
+		tests, err = h.speedTestService.GetTestsByServerName(c.Request().Context(), serverName, limit)
+	} else if slowest == "true" {
+		tests, err = h.speedTestService.GetSlowestTests(c.Request().Context(), limit)
+	} else {
+		tests, err = h.speedTestService.GetRecentTests(c.Request().Context(), limit)
+	}
+
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -96,7 +111,24 @@ func (h *APIHandler) GetIperfTests(c echo.Context) error {
 		}
 	}
 
-	tests, err := h.iperfService.GetRecentTests(c.Request().Context(), limit)
+	// Check for filtering parameters
+	hostName := c.QueryParam("host_name")
+	hostType := c.QueryParam("host_type")
+	slowest := c.QueryParam("slowest") // "true" to get slowest tests
+
+	var tests []*ent.IperfTest
+	var err error
+
+	if hostName != "" {
+		tests, err = h.iperfService.GetTestsByHostName(c.Request().Context(), hostName, limit)
+	} else if hostType != "" {
+		tests, err = h.iperfService.GetTestsByHostType(c.Request().Context(), hostType, limit)
+	} else if slowest == "true" {
+		tests, err = h.iperfService.GetSlowestTests(c.Request().Context(), limit)
+	} else {
+		tests, err = h.iperfService.GetRecentTests(c.Request().Context(), limit)
+	}
+
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
@@ -258,13 +290,24 @@ func (h *APIHandler) GetDashboard(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
 	}
 
+	// Get total counts for summary
+	totalSpeedTests, err := h.speedTestService.GetTotalCount(ctx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
+	totalIperfTests, err := h.iperfService.GetTotalCount(ctx)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, err.Error())
+	}
+
 	return c.JSON(http.StatusOK, map[string]interface{}{
 		"speed_tests": speedTests,
 		"iperf_tests": iperfTests,
 		"hosts":       hosts,
 		"summary": map[string]interface{}{
-			"total_speed_tests": len(speedTests),
-			"total_iperf_tests": len(iperfTests),
+			"total_speed_tests": totalSpeedTests,
+			"total_iperf_tests": totalIperfTests,
 			"active_hosts":      len(hosts),
 		},
 	})

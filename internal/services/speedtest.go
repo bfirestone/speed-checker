@@ -111,3 +111,24 @@ func (s *SpeedTestService) GetTestsInRange(ctx context.Context, start, end time.
 		Order(ent.Desc("timestamp")).
 		All(ctx)
 }
+
+func (s *SpeedTestService) GetTestsByServerName(ctx context.Context, serverName string, limit int) ([]*ent.SpeedTest, error) {
+	return s.client.SpeedTest.
+		Query().
+		Where(speedtest.ServerNameContains(serverName)).
+		Order(ent.Desc("timestamp")).
+		Limit(limit).
+		All(ctx)
+}
+
+func (s *SpeedTestService) GetSlowestTests(ctx context.Context, limit int) ([]*ent.SpeedTest, error) {
+	return s.client.SpeedTest.
+		Query().
+		Order(ent.Asc("download_mbps")). // Ascending order to get slowest first
+		Limit(limit).
+		All(ctx)
+}
+
+func (s *SpeedTestService) GetTotalCount(ctx context.Context) (int, error) {
+	return s.client.SpeedTest.Query().Count(ctx)
+}

@@ -21,10 +21,13 @@
 		retransmits?: number;
 		mean_rtt_ms?: number;
 		success: boolean;
-		host?: {
-			name: string;
-			hostname: string;
-			type: string;
+		edges?: {
+			host?: {
+				id: number;
+				name: string;
+				hostname: string;
+				type: string;
+			};
 		};
 	}
 
@@ -51,6 +54,23 @@
 	let loading = true;
 	let error: string | null = null;
 
+	// Filter states
+	let speedTestFilters = {
+		serverName: '',
+		showSlowest: false,
+		limit: 10
+	};
+
+	let iperfFilters = {
+		hostName: '',
+		hostType: '',
+		showSlowest: false,
+		limit: 10
+	};
+
+	let filteredSpeedTests: SpeedTest[] = [];
+	let filteredIperfTests: IperfTest[] = [];
+
 	async function fetchDashboardData() {
 		if (!browser) return;
 		
@@ -61,6 +81,13 @@
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			dashboardData = await response.json();
+			// Debug logging
+			if (dashboardData && dashboardData.iperf_tests && dashboardData.iperf_tests.length > 0) {
+				console.log('Dashboard iperf test sample:', dashboardData.iperf_tests[0]);
+			}
+			// Apply filters when data is loaded
+			applySpeedTestFilters();
+			applyIperfFilters();
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'An error occurred';
 			console.error('Failed to fetch dashboard data:', e);
@@ -69,13 +96,90 @@
 		}
 	}
 
+	async function applySpeedTestFilters() {
+		if (!browser) return;
+		
+		try {
+			const params = new URLSearchParams();
+			params.append('limit', speedTestFilters.limit.toString());
+			
+			if (speedTestFilters.serverName.trim()) {
+				params.append('server_name', speedTestFilters.serverName.trim());
+			}
+			
+			if (speedTestFilters.showSlowest) {
+				params.append('slowest', 'true');
+			}
+
+			const response = await fetch(`/api/v1/speedtest?${params}`);
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			
+			const result = await response.json();
+			filteredSpeedTests = result.data || [];
+		} catch (e) {
+			console.error('Failed to fetch filtered speed tests:', e);
+			filteredSpeedTests = dashboardData?.speed_tests || [];
+		}
+	}
+
+	async function applyIperfFilters() {
+		if (!browser) return;
+		
+		try {
+			const params = new URLSearchParams();
+			params.append('limit', iperfFilters.limit.toString());
+			
+			if (iperfFilters.hostName.trim()) {
+				params.append('host_name', iperfFilters.hostName.trim());
+			}
+			
+			if (iperfFilters.hostType.trim()) {
+				params.append('host_type', iperfFilters.hostType.trim());
+			}
+			
+			if (iperfFilters.showSlowest) {
+				params.append('slowest', 'true');
+			}
+
+			const response = await fetch(`/api/v1/iperf?${params}`);
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			
+			const result = await response.json();
+			filteredIperfTests = result.data || [];
+			// Debug logging
+			if (filteredIperfTests.length > 0) {
+				console.log('Sample iperf test:', filteredIperfTests[0]);
+			}
+		} catch (e) {
+			console.error('Failed to fetch filtered iperf tests:', e);
+			filteredIperfTests = dashboardData?.iperf_tests || [];
+		}
+	}
+
+	// Reactive statements to apply filters when they change
+	$: if (browser && dashboardData) {
+		// Watch for changes in speed test filter values
+		speedTestFilters.serverName, speedTestFilters.showSlowest, speedTestFilters.limit;
+		applySpeedTestFilters();
+	}
+
+	$: if (browser && dashboardData) {
+		// Watch for changes in iperf filter values
+		iperfFilters.hostName, iperfFilters.hostType, iperfFilters.showSlowest, iperfFilters.limit;
+		applyIperfFilters();
+	}
+
 	async function runSpeedTest() {
 		try {
 			const response = await fetch('/api/v1/speedtest/run', { method: 'POST' });
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-			// Refresh dashboard data
+			// Refresh data
 			await fetchDashboardData();
 		} catch (e) {
 			console.error('Failed to run speed test:', e);
@@ -88,7 +192,7 @@
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-			// Refresh dashboard data
+			// Refresh data
 			await fetchDashboardData();
 		} catch (e) {
 			console.error('Failed to run iperf tests:', e);
@@ -101,6 +205,23 @@
 
 	function formatSpeed(speed: number): string {
 		return speed.toFixed(2);
+	}
+
+	function resetSpeedTestFilters() {
+		speedTestFilters = {
+			serverName: '',
+			showSlowest: false,
+			limit: 10
+		};
+	}
+
+	function resetIperfFilters() {
+		iperfFilters = {
+			hostName: '',
+			hostType: '',
+			showSlowest: false,
+			limit: 10
+		};
 	}
 
 	onMount(() => {
@@ -217,15 +338,64 @@
 			</button>
 		</div>
 
-		<!-- Recent Tests -->
+		<!-- Filters and Recent Tests -->
 		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
 			<!-- Speed Tests -->
 			<div class="bg-white shadow rounded-lg">
 				<div class="px-4 py-5 sm:p-6">
-					<h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Speed Tests</h3>
-					{#if dashboardData.speed_tests.length > 0}
+					<div class="flex justify-between items-center mb-4">
+						<h3 class="text-lg leading-6 font-medium text-gray-900">Speed Tests</h3>
+						<button
+							on:click={resetSpeedTestFilters}
+							class="text-sm text-gray-500 hover:text-gray-700"
+						>
+							Reset Filters
+						</button>
+					</div>
+					
+					<!-- Speed Test Filters -->
+					<div class="mb-4 space-y-3 p-4 bg-gray-50 rounded-lg">
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div>
+								<label for="speed-server-name" class="block text-sm font-medium text-gray-700 mb-1">Server Name</label>
+								<input
+									id="speed-server-name"
+									type="text"
+									bind:value={speedTestFilters.serverName}
+									placeholder="Search by server name..."
+									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label for="speed-limit" class="block text-sm font-medium text-gray-700 mb-1">Limit</label>
+								<select
+									id="speed-limit"
+									bind:value={speedTestFilters.limit}
+									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								>
+									<option value={5}>5 results</option>
+									<option value={10}>10 results</option>
+									<option value={25}>25 results</option>
+									<option value={50}>50 results</option>
+								</select>
+							</div>
+						</div>
+						<div class="flex items-center">
+							<input
+								type="checkbox"
+								bind:checked={speedTestFilters.showSlowest}
+								id="speed-slowest"
+								class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+							/>
+							<label for="speed-slowest" class="ml-2 block text-sm text-gray-700">
+								Show slowest tests (sorted by download speed)
+							</label>
+						</div>
+					</div>
+
+					{#if filteredSpeedTests.length > 0}
 						<div class="space-y-4">
-							{#each dashboardData.speed_tests.slice(0, 5) as test}
+							{#each filteredSpeedTests as test}
 								<div class="border-l-4 border-blue-400 pl-4">
 									<div class="flex justify-between items-start">
 										<div>
@@ -243,7 +413,7 @@
 							{/each}
 						</div>
 					{:else}
-						<p class="text-gray-500">No speed tests available</p>
+						<p class="text-gray-500">No speed tests found</p>
 					{/if}
 				</div>
 			</div>
@@ -251,23 +421,99 @@
 			<!-- Iperf Tests -->
 			<div class="bg-white shadow rounded-lg">
 				<div class="px-4 py-5 sm:p-6">
-					<h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Iperf Tests</h3>
-					{#if dashboardData.iperf_tests.length > 0}
+					<div class="flex justify-between items-center mb-4">
+						<h3 class="text-lg leading-6 font-medium text-gray-900">Iperf Tests</h3>
+						<button
+							on:click={resetIperfFilters}
+							class="text-sm text-gray-500 hover:text-gray-700"
+						>
+							Reset Filters
+						</button>
+					</div>
+					
+					<!-- Iperf Test Filters -->
+					<div class="mb-4 space-y-3 p-4 bg-gray-50 rounded-lg">
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div>
+								<label for="iperf-host-name" class="block text-sm font-medium text-gray-700 mb-1">Host Name</label>
+								<input
+									id="iperf-host-name"
+									type="text"
+									bind:value={iperfFilters.hostName}
+									placeholder="Search by host name..."
+									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								/>
+							</div>
+							<div>
+								<label for="iperf-host-type" class="block text-sm font-medium text-gray-700 mb-1">Host Type</label>
+								<select
+									id="iperf-host-type"
+									bind:value={iperfFilters.hostType}
+									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								>
+									<option value="">All Types</option>
+									<option value="lan">LAN</option>
+									<option value="vpn">VPN</option>
+									<option value="remote">Remote</option>
+								</select>
+							</div>
+						</div>
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+							<div>
+								<label for="iperf-limit" class="block text-sm font-medium text-gray-700 mb-1">Limit</label>
+								<select
+									id="iperf-limit"
+									bind:value={iperfFilters.limit}
+									class="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								>
+									<option value={5}>5 results</option>
+									<option value={10}>10 results</option>
+									<option value={25}>25 results</option>
+									<option value={50}>50 results</option>
+								</select>
+							</div>
+							<div class="flex items-center pt-6">
+								<input
+									type="checkbox"
+									bind:checked={iperfFilters.showSlowest}
+									id="iperf-slowest"
+									class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+								/>
+								<label for="iperf-slowest" class="ml-2 block text-sm text-gray-700">
+									Show slowest tests
+								</label>
+							</div>
+						</div>
+					</div>
+
+					{#if filteredIperfTests.length > 0}
 						<div class="space-y-4">
-							{#each dashboardData.iperf_tests.slice(0, 5) as test}
+							{#each filteredIperfTests as test}
 								<div class="border-l-4 {test.success ? 'border-green-400' : 'border-red-400'} pl-4">
 									<div class="flex justify-between items-start">
 										<div>
-											<p class="text-sm font-medium text-gray-900">
-												{#if test.host}{test.host.name} ({test.host.type}){/if}
-											</p>
 											{#if test.success}
-												<p class="text-sm text-gray-500">
+												<p class="text-sm font-medium text-gray-900">
 													↑ {formatSpeed(test.sent_mbps)} Mbps / ↓ {formatSpeed(test.received_mbps)} Mbps
+												</p>
+												<p class="text-sm text-gray-500">
+													{#if test.edges?.host?.name}
+														{test.edges.host.name} ({test.edges.host.type.toUpperCase()})
+													{:else}
+														Host: Unknown
+													{/if}
 													{#if test.mean_rtt_ms} • RTT: {formatSpeed(test.mean_rtt_ms)}ms{/if}
+													{#if test.retransmits && test.retransmits > 0} • Retransmits: {test.retransmits}{/if}
 												</p>
 											{:else}
-												<p class="text-sm text-red-500">Test failed</p>
+												<p class="text-sm font-medium text-red-500">Test failed</p>
+												<p class="text-sm text-gray-500">
+													{#if test.edges?.host?.name}
+														{test.edges.host.name} ({test.edges.host.type.toUpperCase()})
+													{:else}
+														Host: Unknown
+													{/if}
+												</p>
 											{/if}
 										</div>
 										<p class="text-xs text-gray-400">{formatTimestamp(test.timestamp)}</p>
@@ -276,7 +522,7 @@
 							{/each}
 						</div>
 					{:else}
-						<p class="text-gray-500">No iperf tests available</p>
+						<p class="text-gray-500">No iperf tests found</p>
 					{/if}
 				</div>
 			</div>

@@ -1,6 +1,9 @@
 *.log
 *.db
 
+# Docker volume data
+data/
+
 # Go build artifacts
 speed-checker
 dist/

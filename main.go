@@ -32,7 +32,10 @@ func (cv *CustomValidator) Validate(i interface{}) error {
 
 func main() {
 	// Load configuration
-	cfg := config.Default()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	// Initialize database client
 	client, err := ent.Open("sqlite3", cfg.Database.DSN)

@@ -270,3 +270,38 @@ func (s *IperfService) UpdateHost(ctx context.Context, id int, name, hostname, h
 func (s *IperfService) DeleteHost(ctx context.Context, id int) error {
 	return s.client.Host.DeleteOneID(id).Exec(ctx)
 }
+
+func (s *IperfService) GetTestsByHostName(ctx context.Context, hostName string, limit int) ([]*ent.IperfTest, error) {
+	return s.client.IperfTest.
+		Query().
+		WithHost(func(q *ent.HostQuery) {
+			q.Where(host.NameContains(hostName))
+		}).
+		Order(ent.Desc("timestamp")).
+		Limit(limit).
+		All(ctx)
+}
+
+func (s *IperfService) GetTestsByHostType(ctx context.Context, hostType string, limit int) ([]*ent.IperfTest, error) {
+	return s.client.IperfTest.
+		Query().
+		WithHost(func(q *ent.HostQuery) {
+			q.Where(host.TypeEQ(host.Type(hostType)))
+		}).
+		Order(ent.Desc("timestamp")).
+		Limit(limit).
+		All(ctx)
+}
+
+func (s *IperfService) GetSlowestTests(ctx context.Context, limit int) ([]*ent.IperfTest, error) {
+	return s.client.IperfTest.
+		Query().
+		WithHost().
+		Order(ent.Asc("received_mbps")). // Ascending order to get slowest first
+		Limit(limit).
+		All(ctx)
+}
+
+func (s *IperfService) GetTotalCount(ctx context.Context) (int, error) {
+	return s.client.IperfTest.Query().Count(ctx)
+}

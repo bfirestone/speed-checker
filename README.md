@@ -1,250 +1,194 @@
-# Speed Checker Dashboard
+# Speed Checker
 
-A comprehensive network performance monitoring tool that combines internet speed testing with iperf3 network testing, featuring a modern web dashboard built with SvelteKit.
+A comprehensive network performance monitoring tool with automated speed testing, iperf3 testing, and a modern web dashboard.
 
 ## Features
 
-### 🚀 Speed Testing
-- **Automated Internet Speed Tests**: Uses Ookla's speedtest CLI for accurate internet speed measurements
-- **Scheduled Testing**: Configurable intervals for automatic testing (default: every 15 minutes)
-- **Comprehensive Metrics**: Download/upload speeds, ping, jitter, server information, and ISP details
+- **Automated Speed Testing**: Runs Ookla speedtest every 15 minutes
+- **Network Performance Testing**: Automated iperf3 tests against LAN/VPN/remote hosts
+- **Host Management**: Add, edit, and delete test hosts with different types
+- **Web Dashboard**: Modern SvelteKit frontend with real-time updates
+- **Search & Filtering**: Advanced filtering capabilities for test results
+- **API**: RESTful API for all operations
 
-### 🌐 Network Performance Testing
-- **iperf3 Integration**: Test network performance against local LAN, VPN, and remote hosts
-- **Random Host Selection**: Automatically selects random hosts from each category for testing
-- **Configurable Test Duration**: Customizable test duration (default: 10 seconds)
-- **Multiple Host Types**: Support for LAN, VPN, and remote host categories
+## Architecture
 
-### 📊 Modern Web Dashboard
-- **Real-time Dashboard**: Beautiful, responsive interface built with SvelteKit and Tailwind CSS
-- **Live Data Updates**: Dashboard refreshes automatically every 30 seconds
-- **Host Management**: Add, view, and manage iperf3 test hosts
-- **Manual Test Triggers**: Run speed tests and iperf tests on-demand
-- **Historical Data**: View recent test results and performance trends
-
-### 🏗️ Architecture
-- **Go Backend**: Built with Echo framework for high-performance REST API
-- **Ent ORM**: Type-safe database operations with automatic migrations
-- **SQLite Database**: Lightweight, embedded database for data persistence
-- **SvelteKit Frontend**: Modern, fast, and responsive user interface
-- **RESTful API**: Clean API design for easy integration and extension
-
-## Prerequisites
-
-- **Go 1.21+**: For the backend application
-- **Node.js 18+**: For the SvelteKit frontend
-- **speedtest CLI**: Ookla's official speedtest command-line tool
-- **iperf3**: Network performance testing tool
-
-### Installing Prerequisites
-
-#### Speedtest CLI
-```bash
-# Ubuntu/Debian
-curl -s https://packagecloud.io/install/repositories/ookla/speedtest-cli/script.deb.sh | sudo bash
-sudo apt-get install speedtest
-
-# macOS
-brew install speedtest-cli
-
-# Or download from: https://www.speedtest.net/apps/cli
-```
-
-#### iperf3
-```bash
-# Ubuntu/Debian
-sudo apt-get install iperf3
-
-# macOS
-brew install iperf3
-
-# CentOS/RHEL
-sudo yum install iperf3
-```
+- **Backend**: Go with Echo framework and Ent ORM
+- **Frontend**: SvelteKit with TypeScript and Tailwind CSS
+- **Database**: SQLite with foreign key constraints
+- **Services**: Modular service layer for business logic
 
 ## Installation
 
-1. **Clone the repository**:
+### Prerequisites
+
+- Go 1.21+
+- Node.js 18+
+- `speedtest` CLI tool (Ookla)
+- `iperf3` for network testing
+
+### Setup
+
+1. **Install Go dependencies:**
+   ```bash
+   go mod tidy
+   ```
+
+2. **Set up frontend:**
+   ```bash
+   cd frontend
+   npm install
+   cd ..
+   ```
+
+3. **Build and run:**
+   ```bash
+   # Build backend
+   go build -o speed-checker .
+   
+   # Run backend (starts on port 8080)
+   ./speed-checker
+   
+   # In another terminal, start frontend
+   cd frontend
+   npm run dev
+   ```
+
+4. **Access the dashboard:**
+   - Frontend: http://localhost:5173
+   - API: http://localhost:8080/api/v1
+
+## Search & Filtering Features
+
+### Speed Test Filtering
+
+The dashboard provides powerful filtering capabilities for speed test results:
+
+- **Server Name Search**: Filter tests by server name (partial match)
+- **Slowest Tests**: Show tests sorted by slowest download speeds
+- **Result Limit**: Control number of results (5, 10, 25, 50)
+
+**API Usage:**
 ```bash
-git clone <repository-url>
-cd speed-checker
+# Search by server name
+GET /api/v1/speedtest?server_name=Atlanta
+
+# Get slowest tests
+GET /api/v1/speedtest?slowest=true&limit=10
+
+# Combined filters
+GET /api/v1/speedtest?server_name=Comcast&limit=25
 ```
 
-2. **Install Go dependencies**:
+### Iperf Test Filtering
+
+Filter iperf3 test results by various criteria:
+
+- **Host Name Search**: Filter by host name (partial match)
+- **Host Type**: Filter by LAN, VPN, or Remote hosts
+- **Slowest Tests**: Show tests sorted by slowest received speeds
+- **Result Limit**: Control number of results
+
+**API Usage:**
 ```bash
-go mod tidy
-```
+# Filter by host name
+GET /api/v1/iperf?host_name=server
 
-3. **Install and build frontend**:
-```bash
-cd frontend
-npm install
-npm run build
-cd ..
-```
+# Filter by host type
+GET /api/v1/iperf?host_type=lan
 
-4. **Run the application**:
-```bash
-go run main.go
-```
+# Get slowest iperf tests
+GET /api/v1/iperf?slowest=true&limit=10
 
-The application will start on `http://localhost:8080`
-
-## Configuration
-
-The application uses sensible defaults but can be configured by modifying the `config.Default()` function in `internal/config/config.go`:
-
-```go
-Testing: TestingConfig{
-    SpeedTestInterval: 15 * time.Minute,  // Speed test frequency
-    IperfTestInterval: 10 * time.Minute,  // iperf test frequency
-    IperfTestDuration: 10,                // iperf test duration in seconds
-},
-Server: ServerConfig{
-    Port: "8080",                         // Server port
-    Host: "localhost",                    // Server host
-},
+# Combined filters
+GET /api/v1/iperf?host_type=vpn&limit=25
 ```
 
 ## API Endpoints
 
 ### Speed Tests
-- `GET /api/v1/speedtest` - Get recent speed tests
-- `GET /api/v1/speedtest/range?start=<RFC3339>&end=<RFC3339>` - Get speed tests in date range
-- `POST /api/v1/speedtest/run` - Run a speed test manually
+- `GET /api/v1/speedtest` - Get speed tests (with filtering)
+- `POST /api/v1/speedtest/run` - Run manual speed test
 
-### iperf Tests
-- `GET /api/v1/iperf` - Get recent iperf tests
-- `POST /api/v1/iperf/run` - Run iperf tests manually
+### Iperf Tests
+- `GET /api/v1/iperf` - Get iperf tests (with filtering)
+- `POST /api/v1/iperf/run` - Run manual iperf tests
 
 ### Host Management
-- `GET /api/v1/hosts` - Get all configured hosts
-- `POST /api/v1/hosts` - Add a new host
+- `GET /api/v1/hosts` - List all hosts
+- `POST /api/v1/hosts` - Add new host
+- `PUT /api/v1/hosts/:id` - Update host
+- `DELETE /api/v1/hosts/:id` - Delete host
 
 ### Dashboard
 - `GET /api/v1/dashboard` - Get dashboard summary data
 
-## Setting Up iperf3 Hosts
-
-To test network performance, you need to set up iperf3 servers on your target hosts:
-
-### On the target host (server):
-```bash
-# Run iperf3 in server mode
-iperf3 -s -p 5201
-
-# Or run as a daemon
-iperf3 -s -D -p 5201
-```
-
-### Add hosts via the web interface:
-1. Navigate to the "Hosts" page in the dashboard
-2. Click "Add Host"
-3. Fill in the host details:
-   - **Name**: Friendly name (e.g., "Home Router")
-   - **Hostname/IP**: IP address or hostname
-   - **Port**: iperf3 server port (default: 5201)
-   - **Type**: LAN, VPN, or Remote
-   - **Description**: Optional description
-
 ## Database Schema
 
-The application uses three main entities:
+### SpeedTest
+- Timestamp, download/upload speeds, ping, jitter
+- Server details, ISP, result URL
 
-- **SpeedTest**: Internet speed test results
-- **IperfTest**: Network performance test results
-- **Host**: iperf3 server configurations
+### IperfTest  
+- Sent/received speeds, RTT, retransmits
+- Success status, error messages
+- Relationship to Host
 
-Database migrations are handled automatically by Ent ORM.
+### Host
+- Name, hostname, port, type (lan/vpn/remote)
+- Active status, description
+
+## Configuration
+
+The application uses automatic configuration with sensible defaults:
+- Database: `speed_checker.db` (SQLite)
+- Backend Port: 8080
+- Test Intervals: Speed tests every 15min, iperf every 10min
+
+## Example Hosts Configuration
+
+```sql
+-- Add sample hosts for testing
+INSERT INTO hosts (name, hostname, port, type, active, description) VALUES
+('Local Server', '192.168.1.100', 5201, 'lan', true, 'Main server'),
+('VPN Gateway', '10.0.0.1', 5201, 'vpn', true, 'VPN tunnel endpoint'),
+('Remote Host', 'remote.example.com', 5201, 'remote', true, 'Internet host');
+```
+
+## Performance Results
+
+### Example Speed Test Results
+- Download: ~936 Mbps
+- Upload: ~350 Mbps  
+- Ping: ~14ms
+
+### Example Iperf3 Results
+- Bidirectional: 943+ Mbps
+- RTT: 2.29ms
+- Retransmits: Minimal
 
 ## Development
 
-### Project Structure
-```
-speed-checker/
-├── main.go                 # Application entry point
-├── ent/                    # Ent ORM generated code
-│   └── schema/            # Database schema definitions
-├── internal/
-│   ├── config/            # Configuration management
-│   ├── handlers/          # HTTP handlers
-│   └── services/          # Business logic
-├── frontend/              # SvelteKit frontend
-│   └── src/
-│       └── routes/        # SvelteKit pages
-└── README.md
-```
+### Adding New Filters
 
-### Running in Development
+1. **Backend**: Add query parameters to handlers in `internal/handlers/api.go`
+2. **Services**: Implement filtering logic in service methods
+3. **Frontend**: Add UI controls and API calls in dashboard components
 
-1. **Backend** (with hot reload using air):
-```bash
-# Install air for hot reload
-go install github.com/air-verse/air@latest
+### Architecture Notes
 
-# Run with hot reload
-air
-```
-
-2. **Frontend** (development server):
-```bash
-cd frontend
-npm run dev
-```
-
-### Building for Production
-
-```bash
-# Build frontend
-cd frontend
-npm run build
-cd ..
-
-# Build Go binary
-go build -o speed-checker main.go
-
-# Run
-./speed-checker
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- Services handle business logic and database operations
+- Handlers manage HTTP requests/responses and validation  
+- Ent provides type-safe database operations
+- Echo handles routing and middleware
 
 ## Troubleshooting
 
-### Common Issues
+1. **Database Locked**: Ensure only one instance is running
+2. **Permission Denied**: Check iperf3 and speedtest CLI permissions
+3. **Connection Refused**: Verify host configurations and network connectivity
+4. **Foreign Key Constraints**: Database requires `_fk=1` parameter
 
-1. **speedtest command not found**:
-   - Install Ookla's speedtest CLI (see Prerequisites)
+## License
 
-2. **iperf3 tests failing**:
-   - Ensure iperf3 servers are running on target hosts
-   - Check firewall settings and port accessibility
-   - Verify host configurations in the dashboard
-
-3. **Frontend not loading**:
-   - Ensure the frontend was built (`npm run build` in frontend directory)
-   - Check that the build output exists in `frontend/build/`
-
-4. **Database errors**:
-   - The SQLite database is created automatically
-   - Check file permissions in the application directory
-
-### Logs
-
-The application logs all activities to stdout. Key events include:
-- Speed test executions and results
-- iperf test executions and results
-- API requests and errors
-- Database operations
-
-For more detailed logging, you can modify the log level in the application code. 
+MIT License - see LICENSE file for details. 
