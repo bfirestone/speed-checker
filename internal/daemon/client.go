@@ -99,7 +99,7 @@ func (d *APIClient) runSpeedTest(ctx context.Context) error {
 	log.Println("🚀 Starting Ookla speed test...")
 
 	// Run the speedtest CLI
-	cmd := exec.CommandContext(ctx, "speedtest", "--format=json")
+	cmd := exec.CommandContext(ctx, "speedtest", "--format=json", "--accept-license", "--accept-gdpr")
 	output, err := cmd.Output()
 	if err != nil {
 		return fmt.Errorf("speedtest command failed: %w", err)

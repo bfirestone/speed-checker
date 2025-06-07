@@ -38,8 +38,8 @@
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-			const data = await response.json();
-			hosts = data.data || [];
+					const data = await response.json();
+		hosts = Array.isArray(data) ? data : data.data || [];
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'An error occurred';
 			console.error('Failed to fetch hosts:', e);

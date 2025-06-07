@@ -118,6 +118,32 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /speedtest/results/{testId}:
+    parameters:
+      - name: testId
+        in: path
+        required: true
+        description: Speed test result ID
+        schema:
+          type: integer
+          minimum: 1
+
+    delete:
+      summary: Delete speed test result
+      description: Delete a specific speed test result by its ID
+      operationId: deleteSpeedTest
+      tags:
+        - speedtest
+      responses:
+        '204':
+          description: Speed test result deleted successfully
+        '404':
+          description: Speed test result not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   # Iperf Test Endpoints
   /iperf/results:
     post:
@@ -215,6 +241,32 @@ paths:
                     type: integer
                   offset:
                     type: integer
+
+  /iperf/results/{testId}:
+    parameters:
+      - name: testId
+        in: path
+        required: true
+        description: Iperf test result ID
+        schema:
+          type: integer
+          minimum: 1
+
+    delete:
+      summary: Delete iperf test result
+      description: Delete a specific iperf test result by its ID
+      operationId: deleteIperfTest
+      tags:
+        - iperf
+      responses:
+        '204':
+          description: Iperf test result deleted successfully
+        '404':
+          description: Iperf test result not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   # Host Management Endpoints
   /hosts:

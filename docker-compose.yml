@@ -10,9 +10,9 @@ services:
     environment:
       - POSTGRES_HOST=${POSTGRES_HOST:-speed-checker-db}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-speedtest}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedtest}
-      - POSTGRES_DB=${POSTGRES_DB:-speedtest}
+      - POSTGRES_USER=${POSTGRES_USER:-speedchecker}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedchecker}
+      - POSTGRES_DB=${POSTGRES_DB:-speedchecker}
       - POSTGRES_SSLMODE=${POSTGRES_SSLMODE:-disable}
       - SPEED_CHECKER_SERVER_HOST=0.0.0.0
       - SPEED_CHECKER_SERVER_PORT=8080
@@ -47,9 +47,9 @@ services:
     environment:
       - POSTGRES_HOST=${POSTGRES_HOST:-speed-checker-db}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-speedtest}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedtest}
-      - POSTGRES_DB=${POSTGRES_DB:-speedtest}
+      - POSTGRES_USER=${POSTGRES_USER:-speedchecker}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedchecker}
+      - POSTGRES_DB=${POSTGRES_DB:-speedchecker}
       - POSTGRES_SSLMODE=${POSTGRES_SSLMODE:-disable}
       - SPEED_CHECKER_SERVER_HOST=0.0.0.0
       - SPEED_CHECKER_SERVER_PORT=8080
@@ -104,9 +104,9 @@ services:
     environment:
       - POSTGRES_HOST=${POSTGRES_HOST:-speed-checker-db}
       - POSTGRES_PORT=${POSTGRES_PORT:-5432}
-      - POSTGRES_USER=${POSTGRES_USER:-speedtest}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedtest}
-      - POSTGRES_DB=${POSTGRES_DB:-speedtest}
+      - POSTGRES_USER=${POSTGRES_USER:-speedchecker}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedchecker}
+      - POSTGRES_DB=${POSTGRES_DB:-speedchecker}
       - POSTGRES_SSLMODE=${POSTGRES_SSLMODE:-disable}
       - SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=15m
       - SPEED_CHECKER_TESTING_IPERF_INTERVAL=10m
@@ -182,16 +182,16 @@ services:
     image: postgres:17
     container_name: speed-checker-db
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-speedtest}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-speedtest}
-      POSTGRES_DB: ${POSTGRES_DB:-speedtest}
+      POSTGRES_USER: ${POSTGRES_USER:-speedchecker}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-speedchecker}
+      POSTGRES_DB: ${POSTGRES_DB:-speedchecker}
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
     restart: unless-stopped
     networks:
       - speed-checker-network
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "speedtest"]
+      test: ["CMD", "pg_isready", "-U", "speedchecker"]
       interval: 30s
       timeout: 10s
       start_period: 30s

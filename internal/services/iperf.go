@@ -351,3 +351,14 @@ func (s *IperfService) CreateFromSubmission(ctx context.Context, submission api.
 
 	return iperfTest, nil
 }
+
+// DeleteTest deletes an iperf test by ID
+func (s *IperfService) DeleteTest(ctx context.Context, testID int) error {
+	err := s.client.IperfTest.DeleteOneID(testID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete iperf test %d: %w", testID, err)
+	}
+
+	log.Printf("Iperf test deleted - ID: %d", testID)
+	return nil
+}

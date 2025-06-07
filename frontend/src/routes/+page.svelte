@@ -113,13 +113,13 @@
 				params.append('slowest', 'true');
 			}
 
-			const response = await fetch(apiUrl(`/api/v1/speedtest?${params}`));
+			const response = await fetch(apiUrl(`/api/v1/speedtest/results?${params}`));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			
 			const result = await response.json();
-			filteredSpeedTests = result.data || [];
+			filteredSpeedTests = result.results || result.data || [];
 		} catch (e) {
 			console.error('Failed to fetch filtered speed tests:', e);
 			filteredSpeedTests = dashboardData?.recent_speed_tests || [];
@@ -145,13 +145,13 @@
 				params.append('slowest', 'true');
 			}
 
-			const response = await fetch(apiUrl(`/api/v1/iperf?${params}`));
+			const response = await fetch(apiUrl(`/api/v1/iperf/results?${params}`));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			
 			const result = await response.json();
-			filteredIperfTests = result.data || [];
+			filteredIperfTests = result.results || result.data || [];
 			// Debug logging
 			if (filteredIperfTests.length > 0) {
 				console.log('Sample iperf test:', filteredIperfTests[0]);
@@ -177,7 +177,7 @@
 
 	async function runSpeedTest() {
 		try {
-			const response = await fetch(apiUrl('/api/v1/speedtest/run'), { method: 'POST' });
+			const response = await fetch(apiUrl('/api/v1/legacy/speedtest/run'), { method: 'POST' });
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -190,7 +190,7 @@
 
 	async function runIperfTests() {
 		try {
-			const response = await fetch(apiUrl('/api/v1/iperf/run'), { method: 'POST' });
+			const response = await fetch(apiUrl('/api/v1/legacy/iperf/run'), { method: 'POST' });
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -224,6 +224,46 @@
 			showSlowest: false,
 			limit: 10
 		};
+	}
+
+	async function deleteSpeedTest(testId: number) {
+		if (!confirm('Are you sure you want to delete this speed test result?')) {
+			return;
+		}
+
+		try {
+			const response = await fetch(apiUrl(`/api/v1/speedtest/results/${testId}`), { 
+				method: 'DELETE' 
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			// Refresh data
+			await fetchDashboardData();
+		} catch (e) {
+			console.error('Failed to delete speed test:', e);
+			alert('Failed to delete speed test. Please try again.');
+		}
+	}
+
+	async function deleteIperfTest(testId: number) {
+		if (!confirm('Are you sure you want to delete this iperf test result?')) {
+			return;
+		}
+
+		try {
+			const response = await fetch(apiUrl(`/api/v1/iperf/results/${testId}`), { 
+				method: 'DELETE' 
+			});
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+			// Refresh data
+			await fetchDashboardData();
+		} catch (e) {
+			console.error('Failed to delete iperf test:', e);
+			alert('Failed to delete iperf test. Please try again.');
+		}
 	}
 
 	onMount(() => {
@@ -409,7 +449,18 @@
 												{#if test.server_name} • {test.server_name}{/if}
 											</p>
 										</div>
-										<p class="text-xs text-gray-400">{formatTimestamp(test.timestamp)}</p>
+										<div class="flex items-center space-x-2">
+											<p class="text-xs text-gray-400">{formatTimestamp(test.timestamp)}</p>
+											<button
+												on:click={() => deleteSpeedTest(test.id)}
+												class="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+												title="Delete this speed test result"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+												</svg>
+											</button>
+										</div>
 									</div>
 								</div>
 							{/each}
@@ -518,7 +569,18 @@
 												</p>
 											{/if}
 										</div>
-										<p class="text-xs text-gray-400">{formatTimestamp(test.timestamp)}</p>
+										<div class="flex items-center space-x-2">
+											<p class="text-xs text-gray-400">{formatTimestamp(test.timestamp)}</p>
+											<button
+												on:click={() => deleteIperfTest(test.id)}
+												class="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+												title="Delete this iperf test result"
+											>
+												<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+												</svg>
+											</button>
+										</div>
 									</div>
 								</div>
 							{/each}

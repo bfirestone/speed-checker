@@ -175,3 +175,14 @@ func (s *SpeedTestService) CreateFromSubmission(ctx context.Context, submission 
 
 	return speedTest, nil
 }
+
+// DeleteTest deletes a speed test by ID
+func (s *SpeedTestService) DeleteTest(ctx context.Context, testID int) error {
+	err := s.client.SpeedTest.DeleteOneID(testID).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to delete speed test %d: %w", testID, err)
+	}
+
+	log.Printf("Speed test deleted - ID: %d", testID)
+	return nil
+}

@@ -472,6 +472,9 @@ type ClientInterface interface {
 
 	SubmitIperfTest(ctx context.Context, body SubmitIperfTestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// DeleteIperfTest request
+	DeleteIperfTest(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetSpeedTests request
 	GetSpeedTests(ctx context.Context, params *GetSpeedTestsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -479,6 +482,9 @@ type ClientInterface interface {
 	SubmitSpeedTestWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	SubmitSpeedTest(ctx context.Context, body SubmitSpeedTestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteSpeedTest request
+	DeleteSpeedTest(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetDashboard(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -613,6 +619,18 @@ func (c *Client) SubmitIperfTest(ctx context.Context, body SubmitIperfTestJSONRe
 	return c.Client.Do(req)
 }
 
+func (c *Client) DeleteIperfTest(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteIperfTestRequest(c.Server, testId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) GetSpeedTests(ctx context.Context, params *GetSpeedTestsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSpeedTestsRequest(c.Server, params)
 	if err != nil {
@@ -639,6 +657,18 @@ func (c *Client) SubmitSpeedTestWithBody(ctx context.Context, contentType string
 
 func (c *Client) SubmitSpeedTest(ctx context.Context, body SubmitSpeedTestJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSubmitSpeedTestRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteSpeedTest(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSpeedTestRequest(c.Server, testId)
 	if err != nil {
 		return nil, err
 	}
@@ -1065,6 +1095,40 @@ func NewSubmitIperfTestRequestWithBody(server string, contentType string, body i
 	return req, nil
 }
 
+// NewDeleteIperfTestRequest generates requests for DeleteIperfTest
+func NewDeleteIperfTestRequest(server string, testId int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "testId", runtime.ParamLocationPath, testId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/iperf/results/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetSpeedTestsRequest generates requests for GetSpeedTests
 func NewGetSpeedTestsRequest(server string, params *GetSpeedTestsParams) (*http.Request, error) {
 	var err error
@@ -1218,6 +1282,40 @@ func NewSubmitSpeedTestRequestWithBody(server string, contentType string, body i
 	return req, nil
 }
 
+// NewDeleteSpeedTestRequest generates requests for DeleteSpeedTest
+func NewDeleteSpeedTestRequest(server string, testId int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "testId", runtime.ParamLocationPath, testId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/speedtest/results/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -1291,6 +1389,9 @@ type ClientWithResponsesInterface interface {
 
 	SubmitIperfTestWithResponse(ctx context.Context, body SubmitIperfTestJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitIperfTestResponse, error)
 
+	// DeleteIperfTestWithResponse request
+	DeleteIperfTestWithResponse(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*DeleteIperfTestResponse, error)
+
 	// GetSpeedTestsWithResponse request
 	GetSpeedTestsWithResponse(ctx context.Context, params *GetSpeedTestsParams, reqEditors ...RequestEditorFn) (*GetSpeedTestsResponse, error)
 
@@ -1298,6 +1399,9 @@ type ClientWithResponsesInterface interface {
 	SubmitSpeedTestWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SubmitSpeedTestResponse, error)
 
 	SubmitSpeedTestWithResponse(ctx context.Context, body SubmitSpeedTestJSONRequestBody, reqEditors ...RequestEditorFn) (*SubmitSpeedTestResponse, error)
+
+	// DeleteSpeedTestWithResponse request
+	DeleteSpeedTestWithResponse(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*DeleteSpeedTestResponse, error)
 }
 
 type GetDashboardResponse struct {
@@ -1489,6 +1593,28 @@ func (r SubmitIperfTestResponse) StatusCode() int {
 	return 0
 }
 
+type DeleteIperfTestResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteIperfTestResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteIperfTestResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetSpeedTestsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -1537,6 +1663,28 @@ func (r SubmitSpeedTestResponse) Status() string {
 
 // StatusCode returns HTTPResponse.StatusCode
 func (r SubmitSpeedTestResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type DeleteSpeedTestResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteSpeedTestResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteSpeedTestResponse) StatusCode() int {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.StatusCode
 	}
@@ -1639,6 +1787,15 @@ func (c *ClientWithResponses) SubmitIperfTestWithResponse(ctx context.Context, b
 	return ParseSubmitIperfTestResponse(rsp)
 }
 
+// DeleteIperfTestWithResponse request returning *DeleteIperfTestResponse
+func (c *ClientWithResponses) DeleteIperfTestWithResponse(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*DeleteIperfTestResponse, error) {
+	rsp, err := c.DeleteIperfTest(ctx, testId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteIperfTestResponse(rsp)
+}
+
 // GetSpeedTestsWithResponse request returning *GetSpeedTestsResponse
 func (c *ClientWithResponses) GetSpeedTestsWithResponse(ctx context.Context, params *GetSpeedTestsParams, reqEditors ...RequestEditorFn) (*GetSpeedTestsResponse, error) {
 	rsp, err := c.GetSpeedTests(ctx, params, reqEditors...)
@@ -1663,6 +1820,15 @@ func (c *ClientWithResponses) SubmitSpeedTestWithResponse(ctx context.Context, b
 		return nil, err
 	}
 	return ParseSubmitSpeedTestResponse(rsp)
+}
+
+// DeleteSpeedTestWithResponse request returning *DeleteSpeedTestResponse
+func (c *ClientWithResponses) DeleteSpeedTestWithResponse(ctx context.Context, testId int, reqEditors ...RequestEditorFn) (*DeleteSpeedTestResponse, error) {
+	rsp, err := c.DeleteSpeedTest(ctx, testId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteSpeedTestResponse(rsp)
 }
 
 // ParseGetDashboardResponse parses an HTTP response from a GetDashboardWithResponse call
@@ -1922,6 +2088,32 @@ func ParseSubmitIperfTestResponse(rsp *http.Response) (*SubmitIperfTestResponse,
 	return response, nil
 }
 
+// ParseDeleteIperfTestResponse parses an HTTP response from a DeleteIperfTestWithResponse call
+func ParseDeleteIperfTestResponse(rsp *http.Response) (*DeleteIperfTestResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteIperfTestResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseGetSpeedTestsResponse parses an HTTP response from a GetSpeedTestsWithResponse call
 func ParseGetSpeedTestsResponse(rsp *http.Response) (*GetSpeedTestsResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -1996,6 +2188,32 @@ func ParseSubmitSpeedTestResponse(rsp *http.Response) (*SubmitSpeedTestResponse,
 			return nil, err
 		}
 		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteSpeedTestResponse parses an HTTP response from a DeleteSpeedTestWithResponse call
+func ParseDeleteSpeedTestResponse(rsp *http.Response) (*DeleteSpeedTestResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteSpeedTestResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

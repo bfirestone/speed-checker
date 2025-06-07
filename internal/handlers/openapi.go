@@ -107,6 +107,19 @@ func (h *OpenAPIHandler) SubmitSpeedTest(ctx echo.Context) error {
 	return ctx.JSON(http.StatusCreated, result)
 }
 
+// DeleteSpeedTest implements DELETE /speedtest/results/{testId}
+func (h *OpenAPIHandler) DeleteSpeedTest(ctx echo.Context, testId int) error {
+	err := h.speedTestService.DeleteTest(ctx.Request().Context(), testId)
+	if err != nil {
+		return ctx.JSON(http.StatusNotFound, api.Error{
+			Error:   "not_found",
+			Message: "Speed test result not found",
+		})
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
+}
+
 // Iperf Test Endpoints
 
 // GetIperfTests implements GET /iperf/results
@@ -182,6 +195,19 @@ func (h *OpenAPIHandler) SubmitIperfTest(ctx echo.Context) error {
 	// Return the created iperf test result
 	result := entIperfTestToAPI(iperfTest)
 	return ctx.JSON(http.StatusCreated, result)
+}
+
+// DeleteIperfTest implements DELETE /iperf/results/{testId}
+func (h *OpenAPIHandler) DeleteIperfTest(ctx echo.Context, testId int) error {
+	err := h.iperfService.DeleteTest(ctx.Request().Context(), testId)
+	if err != nil {
+		return ctx.JSON(http.StatusNotFound, api.Error{
+			Error:   "not_found",
+			Message: "Iperf test result not found",
+		})
+	}
+
+	return ctx.NoContent(http.StatusNoContent)
 }
 
 // Host Management Endpoints

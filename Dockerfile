@@ -24,10 +24,26 @@ FROM alpine:latest
 # Install runtime dependencies
 RUN apk add --no-cache \
     ca-certificates \
-    speedtest-cli \
     iperf3 \
     tzdata \
-    wget
+    wget \
+    curl \
+    tar
+
+# Install Ookla speedtest CLI with multi-architecture support
+RUN ARCH=$(uname -m) && \
+    if [ "$ARCH" = "x86_64" ]; then \
+        SPEEDTEST_URL="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
+        SPEEDTEST_URL="https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-aarch64.tgz"; \
+    else \
+        echo "Unsupported architecture: $ARCH" && exit 1; \
+    fi && \
+    wget -O /tmp/speedtest.tgz "$SPEEDTEST_URL" && \
+    tar -xzf /tmp/speedtest.tgz -C /tmp && \
+    mv /tmp/speedtest /usr/local/bin/speedtest && \
+    chmod +x /usr/local/bin/speedtest && \
+    rm -f /tmp/speedtest.tgz
 
 # Create app user
 RUN addgroup -g 1001 -S appgroup && \
