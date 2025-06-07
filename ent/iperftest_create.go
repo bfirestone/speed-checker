@@ -131,6 +131,20 @@ func (itc *IperfTestCreate) SetNillableErrorMessage(s *string) *IperfTestCreate 
 	return itc
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (itc *IperfTestCreate) SetDaemonID(s string) *IperfTestCreate {
+	itc.mutation.SetDaemonID(s)
+	return itc
+}
+
+// SetNillableDaemonID sets the "daemon_id" field if the given value is not nil.
+func (itc *IperfTestCreate) SetNillableDaemonID(s *string) *IperfTestCreate {
+	if s != nil {
+		itc.SetDaemonID(*s)
+	}
+	return itc
+}
+
 // SetHostID sets the "host" edge to the Host entity by ID.
 func (itc *IperfTestCreate) SetHostID(id int) *IperfTestCreate {
 	itc.mutation.SetHostID(id)
@@ -284,6 +298,10 @@ func (itc *IperfTestCreate) createSpec() (*IperfTest, *sqlgraph.CreateSpec) {
 	if value, ok := itc.mutation.ErrorMessage(); ok {
 		_spec.SetField(iperftest.FieldErrorMessage, field.TypeString, value)
 		_node.ErrorMessage = value
+	}
+	if value, ok := itc.mutation.DaemonID(); ok {
+		_spec.SetField(iperftest.FieldDaemonID, field.TypeString, value)
+		_node.DaemonID = value
 	}
 	if nodes := itc.mutation.HostIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{

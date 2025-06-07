@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { apiUrl } from '$lib/config';
 
 	interface Host {
 		id: number;
@@ -33,7 +34,7 @@
 		
 		try {
 			loading = true;
-			const response = await fetch('/api/v1/hosts');
+			const response = await fetch(apiUrl('/api/v1/hosts'));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -49,7 +50,7 @@
 
 	async function addHost() {
 		try {
-			const response = await fetch('/api/v1/hosts', {
+			const response = await fetch(apiUrl('/api/v1/hosts'), {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json',
@@ -74,7 +75,7 @@
 		if (!editingHost) return;
 		
 		try {
-			const response = await fetch(`/api/v1/hosts/${editingHost.id}`, {
+			const response = await fetch(apiUrl(`/api/v1/hosts/${editingHost.id}`), {
 				method: 'PUT',
 				headers: {
 					'Content-Type': 'application/json',
@@ -101,7 +102,7 @@
 		}
 
 		try {
-			const response = await fetch(`/api/v1/hosts/${hostId}`, {
+			const response = await fetch(apiUrl(`/api/v1/hosts/${hostId}`), {
 				method: 'DELETE',
 			});
 

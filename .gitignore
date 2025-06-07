@@ -4,6 +4,9 @@
 # Docker volume data
 data/
 
+# Docker Compose override files
+docker-compose.override.yml
+
 # Go build artifacts
 speed-checker
 dist/

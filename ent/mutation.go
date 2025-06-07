@@ -798,6 +798,7 @@ type IperfTestMutation struct {
 	protocol            *string
 	success             *bool
 	error_message       *string
+	daemon_id           *string
 	clearedFields       map[string]struct{}
 	host                *int
 	clearedhost         bool
@@ -1369,6 +1370,55 @@ func (m *IperfTestMutation) ResetErrorMessage() {
 	delete(m.clearedFields, iperftest.FieldErrorMessage)
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (m *IperfTestMutation) SetDaemonID(s string) {
+	m.daemon_id = &s
+}
+
+// DaemonID returns the value of the "daemon_id" field in the mutation.
+func (m *IperfTestMutation) DaemonID() (r string, exists bool) {
+	v := m.daemon_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDaemonID returns the old "daemon_id" field's value of the IperfTest entity.
+// If the IperfTest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *IperfTestMutation) OldDaemonID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDaemonID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDaemonID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDaemonID: %w", err)
+	}
+	return oldValue.DaemonID, nil
+}
+
+// ClearDaemonID clears the value of the "daemon_id" field.
+func (m *IperfTestMutation) ClearDaemonID() {
+	m.daemon_id = nil
+	m.clearedFields[iperftest.FieldDaemonID] = struct{}{}
+}
+
+// DaemonIDCleared returns if the "daemon_id" field was cleared in this mutation.
+func (m *IperfTestMutation) DaemonIDCleared() bool {
+	_, ok := m.clearedFields[iperftest.FieldDaemonID]
+	return ok
+}
+
+// ResetDaemonID resets all changes to the "daemon_id" field.
+func (m *IperfTestMutation) ResetDaemonID() {
+	m.daemon_id = nil
+	delete(m.clearedFields, iperftest.FieldDaemonID)
+}
+
 // SetHostID sets the "host" edge to the Host entity by id.
 func (m *IperfTestMutation) SetHostID(id int) {
 	m.host = &id
@@ -1442,7 +1492,7 @@ func (m *IperfTestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *IperfTestMutation) Fields() []string {
-	fields := make([]string, 0, 9)
+	fields := make([]string, 0, 10)
 	if m.timestamp != nil {
 		fields = append(fields, iperftest.FieldTimestamp)
 	}
@@ -1470,6 +1520,9 @@ func (m *IperfTestMutation) Fields() []string {
 	if m.error_message != nil {
 		fields = append(fields, iperftest.FieldErrorMessage)
 	}
+	if m.daemon_id != nil {
+		fields = append(fields, iperftest.FieldDaemonID)
+	}
 	return fields
 }
 
@@ -1496,6 +1549,8 @@ func (m *IperfTestMutation) Field(name string) (ent.Value, bool) {
 		return m.Success()
 	case iperftest.FieldErrorMessage:
 		return m.ErrorMessage()
+	case iperftest.FieldDaemonID:
+		return m.DaemonID()
 	}
 	return nil, false
 }
@@ -1523,6 +1578,8 @@ func (m *IperfTestMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldSuccess(ctx)
 	case iperftest.FieldErrorMessage:
 		return m.OldErrorMessage(ctx)
+	case iperftest.FieldDaemonID:
+		return m.OldDaemonID(ctx)
 	}
 	return nil, fmt.Errorf("unknown IperfTest field %s", name)
 }
@@ -1594,6 +1651,13 @@ func (m *IperfTestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetErrorMessage(v)
+		return nil
+	case iperftest.FieldDaemonID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDaemonID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown IperfTest field %s", name)
@@ -1697,6 +1761,9 @@ func (m *IperfTestMutation) ClearedFields() []string {
 	if m.FieldCleared(iperftest.FieldErrorMessage) {
 		fields = append(fields, iperftest.FieldErrorMessage)
 	}
+	if m.FieldCleared(iperftest.FieldDaemonID) {
+		fields = append(fields, iperftest.FieldDaemonID)
+	}
 	return fields
 }
 
@@ -1719,6 +1786,9 @@ func (m *IperfTestMutation) ClearField(name string) error {
 		return nil
 	case iperftest.FieldErrorMessage:
 		m.ClearErrorMessage()
+		return nil
+	case iperftest.FieldDaemonID:
+		m.ClearDaemonID()
 		return nil
 	}
 	return fmt.Errorf("unknown IperfTest nullable field %s", name)
@@ -1754,6 +1824,9 @@ func (m *IperfTestMutation) ResetField(name string) error {
 		return nil
 	case iperftest.FieldErrorMessage:
 		m.ResetErrorMessage()
+		return nil
+	case iperftest.FieldDaemonID:
+		m.ResetDaemonID()
 		return nil
 	}
 	return fmt.Errorf("unknown IperfTest field %s", name)
@@ -1853,6 +1926,7 @@ type SpeedTestMutation struct {
 	isp              *string
 	external_ip      *string
 	result_url       *string
+	daemon_id        *string
 	clearedFields    map[string]struct{}
 	done             bool
 	oldValue         func(context.Context) (*SpeedTest, error)
@@ -2476,6 +2550,55 @@ func (m *SpeedTestMutation) ResetResultURL() {
 	delete(m.clearedFields, speedtest.FieldResultURL)
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (m *SpeedTestMutation) SetDaemonID(s string) {
+	m.daemon_id = &s
+}
+
+// DaemonID returns the value of the "daemon_id" field in the mutation.
+func (m *SpeedTestMutation) DaemonID() (r string, exists bool) {
+	v := m.daemon_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDaemonID returns the old "daemon_id" field's value of the SpeedTest entity.
+// If the SpeedTest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SpeedTestMutation) OldDaemonID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDaemonID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDaemonID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDaemonID: %w", err)
+	}
+	return oldValue.DaemonID, nil
+}
+
+// ClearDaemonID clears the value of the "daemon_id" field.
+func (m *SpeedTestMutation) ClearDaemonID() {
+	m.daemon_id = nil
+	m.clearedFields[speedtest.FieldDaemonID] = struct{}{}
+}
+
+// DaemonIDCleared returns if the "daemon_id" field was cleared in this mutation.
+func (m *SpeedTestMutation) DaemonIDCleared() bool {
+	_, ok := m.clearedFields[speedtest.FieldDaemonID]
+	return ok
+}
+
+// ResetDaemonID resets all changes to the "daemon_id" field.
+func (m *SpeedTestMutation) ResetDaemonID() {
+	m.daemon_id = nil
+	delete(m.clearedFields, speedtest.FieldDaemonID)
+}
+
 // Where appends a list predicates to the SpeedTestMutation builder.
 func (m *SpeedTestMutation) Where(ps ...predicate.SpeedTest) {
 	m.predicates = append(m.predicates, ps...)
@@ -2510,7 +2633,7 @@ func (m *SpeedTestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SpeedTestMutation) Fields() []string {
-	fields := make([]string, 0, 10)
+	fields := make([]string, 0, 11)
 	if m.timestamp != nil {
 		fields = append(fields, speedtest.FieldTimestamp)
 	}
@@ -2541,6 +2664,9 @@ func (m *SpeedTestMutation) Fields() []string {
 	if m.result_url != nil {
 		fields = append(fields, speedtest.FieldResultURL)
 	}
+	if m.daemon_id != nil {
+		fields = append(fields, speedtest.FieldDaemonID)
+	}
 	return fields
 }
 
@@ -2569,6 +2695,8 @@ func (m *SpeedTestMutation) Field(name string) (ent.Value, bool) {
 		return m.ExternalIP()
 	case speedtest.FieldResultURL:
 		return m.ResultURL()
+	case speedtest.FieldDaemonID:
+		return m.DaemonID()
 	}
 	return nil, false
 }
@@ -2598,6 +2726,8 @@ func (m *SpeedTestMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldExternalIP(ctx)
 	case speedtest.FieldResultURL:
 		return m.OldResultURL(ctx)
+	case speedtest.FieldDaemonID:
+		return m.OldDaemonID(ctx)
 	}
 	return nil, fmt.Errorf("unknown SpeedTest field %s", name)
 }
@@ -2676,6 +2806,13 @@ func (m *SpeedTestMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetResultURL(v)
+		return nil
+	case speedtest.FieldDaemonID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDaemonID(v)
 		return nil
 	}
 	return fmt.Errorf("unknown SpeedTest field %s", name)
@@ -2776,6 +2913,9 @@ func (m *SpeedTestMutation) ClearedFields() []string {
 	if m.FieldCleared(speedtest.FieldResultURL) {
 		fields = append(fields, speedtest.FieldResultURL)
 	}
+	if m.FieldCleared(speedtest.FieldDaemonID) {
+		fields = append(fields, speedtest.FieldDaemonID)
+	}
 	return fields
 }
 
@@ -2807,6 +2947,9 @@ func (m *SpeedTestMutation) ClearField(name string) error {
 		return nil
 	case speedtest.FieldResultURL:
 		m.ClearResultURL()
+		return nil
+	case speedtest.FieldDaemonID:
+		m.ClearDaemonID()
 		return nil
 	}
 	return fmt.Errorf("unknown SpeedTest nullable field %s", name)
@@ -2845,6 +2988,9 @@ func (m *SpeedTestMutation) ResetField(name string) error {
 		return nil
 	case speedtest.FieldResultURL:
 		m.ResetResultURL()
+		return nil
+	case speedtest.FieldDaemonID:
+		m.ResetDaemonID()
 		return nil
 	}
 	return fmt.Errorf("unknown SpeedTest field %s", name)

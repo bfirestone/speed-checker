@@ -1,34 +1,210 @@
-version: '3.8'
-
 services:
-  speed-checker:
+  # Single service deployment (original behavior)
+  speed-checker-all:
     build: .
-    container_name: speed-checker
+    container_name: speed-checker-all
     ports:
       - "8080:8080"
     volumes:
-      - ./data:/app/data
       - /etc/localtime:/etc/localtime:ro
     environment:
-      - SPEED_CHECKER_DATABASE_DSN=/app/data/speedtest_results.db?_fk=1
+      - POSTGRES_HOST=${POSTGRES_HOST:-speed-checker-db}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-speedtest}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedtest}
+      - POSTGRES_DB=${POSTGRES_DB:-speedtest}
+      - POSTGRES_SSLMODE=${POSTGRES_SSLMODE:-disable}
       - SPEED_CHECKER_SERVER_HOST=0.0.0.0
       - SPEED_CHECKER_SERVER_PORT=8080
       - SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=15m
       - SPEED_CHECKER_TESTING_IPERF_INTERVAL=10m
       - SPEED_CHECKER_TESTING_IPERF_DURATION=10
+    command: ["./speed-checker", "all"]
     restart: unless-stopped
     networks:
       - speed-checker-network
+    depends_on:
+      speed-checker-db:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/api/v1/dashboard"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--quiet", "--output-document=-", "http://localhost:8080/api/v1/dashboard"]
       interval: 30s
       timeout: 10s
       start_period: 60s
       retries: 3
+    profiles:
+      - single
+      - default
+
+  # API-centric deployment - API Server
+  speed-checker-api:
+    build: .
+    container_name: speed-checker-api
+    ports:
+      - "8080:8080"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST:-speed-checker-db}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-speedtest}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedtest}
+      - POSTGRES_DB=${POSTGRES_DB:-speedtest}
+      - POSTGRES_SSLMODE=${POSTGRES_SSLMODE:-disable}
+      - SPEED_CHECKER_SERVER_HOST=0.0.0.0
+      - SPEED_CHECKER_SERVER_PORT=8080
+    command: ["./speed-checker", "api"]
+    restart: unless-stopped
+    networks:
+      - speed-checker-network
+    depends_on:
+      speed-checker-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--quiet", "--output-document=-", "http://localhost:8080/api/v1/dashboard"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    profiles:
+      - api-centric
+
+  # API-centric deployment - API Daemon (recommended)
+  speed-checker-daemon:
+    build: .
+    container_name: speed-checker-daemon
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=15m
+      - SPEED_CHECKER_TESTING_IPERF_INTERVAL=10m
+      - SPEED_CHECKER_TESTING_IPERF_DURATION=10
+    command: ["./speed-checker", "daemon", "--api-endpoint", "http://speed-checker-api:8080"]
+    restart: unless-stopped
+    networks:
+      - speed-checker-network
+    depends_on:
+      speed-checker-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "speed-checker daemon"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    profiles:
+      - api-centric
+
+  # Legacy separated deployment - Direct DB Access Daemon
+  speed-checker-daemon-legacy:
+    build: .
+    container_name: speed-checker-daemon-legacy
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST:-speed-checker-db}
+      - POSTGRES_PORT=${POSTGRES_PORT:-5432}
+      - POSTGRES_USER=${POSTGRES_USER:-speedtest}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-speedtest}
+      - POSTGRES_DB=${POSTGRES_DB:-speedtest}
+      - POSTGRES_SSLMODE=${POSTGRES_SSLMODE:-disable}
+      - SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=15m
+      - SPEED_CHECKER_TESTING_IPERF_INTERVAL=10m
+      - SPEED_CHECKER_TESTING_IPERF_DURATION=10
+    command: ["./speed-checker", "daemon", "--legacy"]
+    restart: unless-stopped
+    networks:
+      - speed-checker-network
+    depends_on:
+      speed-checker-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "speed-checker daemon"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    profiles:
+      - legacy
+
+  # Scaling example - Multiple API Daemons
+  speed-checker-daemon-api-2:
+    build: .
+    container_name: speed-checker-daemon-api-2
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+    environment:
+      - SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=20m  # Different interval
+      - SPEED_CHECKER_TESTING_IPERF_INTERVAL=15m      # Different interval
+      - SPEED_CHECKER_TESTING_IPERF_DURATION=10
+    command: ["./speed-checker", "daemon", "--api-endpoint", "http://speed-checker-api:8080"]
+    restart: unless-stopped
+    networks:
+      - speed-checker-network
+    depends_on:
+      speed-checker-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "speed-checker daemon"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+    profiles:
+      - scaling
+
+  # Standalone Frontend (optional)
+  speed-checker-frontend:
+    build: ./frontend
+    container_name: speed-checker-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - PUBLIC_API_BASE_URL=http://localhost:8080  # For browser/client-side
+      - API_BASE_URL=http://speed-checker-api:8080  # For SSR/server-side
+    restart: unless-stopped
+    networks:
+      - speed-checker-network
+    depends_on:
+      speed-checker-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--quiet", "--output-document=-", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    profiles:
+      - frontend
+      - api-centric
+
+  speed-checker-db:
+    image: postgres:17
+    container_name: speed-checker-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-speedtest}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-speedtest}
+      POSTGRES_DB: ${POSTGRES_DB:-speedtest}
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - speed-checker-network
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "speedtest"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    profiles:
+      - api-centric
+      - single
+      - default
+      - legacy
 
 networks:
   speed-checker-network:
-    driver: bridge
+#    driver: bridge
 
 volumes:
   speed-checker-data:

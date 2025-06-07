@@ -33,6 +33,8 @@ const (
 	FieldExternalIP = "external_ip"
 	// FieldResultURL holds the string denoting the result_url field in the database.
 	FieldResultURL = "result_url"
+	// FieldDaemonID holds the string denoting the daemon_id field in the database.
+	FieldDaemonID = "daemon_id"
 	// Table holds the table name of the speedtest in the database.
 	Table = "speed_tests"
 )
@@ -50,6 +52,7 @@ var Columns = []string{
 	FieldIsp,
 	FieldExternalIP,
 	FieldResultURL,
+	FieldDaemonID,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -123,4 +126,9 @@ func ByExternalIP(opts ...sql.OrderTermOption) OrderOption {
 // ByResultURL orders the results by the result_url field.
 func ByResultURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResultURL, opts...).ToFunc()
+}
+
+// ByDaemonID orders the results by the daemon_id field.
+func ByDaemonID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDaemonID, opts...).ToFunc()
 }

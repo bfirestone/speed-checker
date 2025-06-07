@@ -208,6 +208,26 @@ func (itu *IperfTestUpdate) ClearErrorMessage() *IperfTestUpdate {
 	return itu
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (itu *IperfTestUpdate) SetDaemonID(s string) *IperfTestUpdate {
+	itu.mutation.SetDaemonID(s)
+	return itu
+}
+
+// SetNillableDaemonID sets the "daemon_id" field if the given value is not nil.
+func (itu *IperfTestUpdate) SetNillableDaemonID(s *string) *IperfTestUpdate {
+	if s != nil {
+		itu.SetDaemonID(*s)
+	}
+	return itu
+}
+
+// ClearDaemonID clears the value of the "daemon_id" field.
+func (itu *IperfTestUpdate) ClearDaemonID() *IperfTestUpdate {
+	itu.mutation.ClearDaemonID()
+	return itu
+}
+
 // SetHostID sets the "host" edge to the Host entity by ID.
 func (itu *IperfTestUpdate) SetHostID(id int) *IperfTestUpdate {
 	itu.mutation.SetHostID(id)
@@ -324,6 +344,12 @@ func (itu *IperfTestUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if itu.mutation.ErrorMessageCleared() {
 		_spec.ClearField(iperftest.FieldErrorMessage, field.TypeString)
+	}
+	if value, ok := itu.mutation.DaemonID(); ok {
+		_spec.SetField(iperftest.FieldDaemonID, field.TypeString, value)
+	}
+	if itu.mutation.DaemonIDCleared() {
+		_spec.ClearField(iperftest.FieldDaemonID, field.TypeString)
 	}
 	if itu.mutation.HostCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -553,6 +579,26 @@ func (ituo *IperfTestUpdateOne) ClearErrorMessage() *IperfTestUpdateOne {
 	return ituo
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (ituo *IperfTestUpdateOne) SetDaemonID(s string) *IperfTestUpdateOne {
+	ituo.mutation.SetDaemonID(s)
+	return ituo
+}
+
+// SetNillableDaemonID sets the "daemon_id" field if the given value is not nil.
+func (ituo *IperfTestUpdateOne) SetNillableDaemonID(s *string) *IperfTestUpdateOne {
+	if s != nil {
+		ituo.SetDaemonID(*s)
+	}
+	return ituo
+}
+
+// ClearDaemonID clears the value of the "daemon_id" field.
+func (ituo *IperfTestUpdateOne) ClearDaemonID() *IperfTestUpdateOne {
+	ituo.mutation.ClearDaemonID()
+	return ituo
+}
+
 // SetHostID sets the "host" edge to the Host entity by ID.
 func (ituo *IperfTestUpdateOne) SetHostID(id int) *IperfTestUpdateOne {
 	ituo.mutation.SetHostID(id)
@@ -699,6 +745,12 @@ func (ituo *IperfTestUpdateOne) sqlSave(ctx context.Context) (_node *IperfTest, 
 	}
 	if ituo.mutation.ErrorMessageCleared() {
 		_spec.ClearField(iperftest.FieldErrorMessage, field.TypeString)
+	}
+	if value, ok := ituo.mutation.DaemonID(); ok {
+		_spec.SetField(iperftest.FieldDaemonID, field.TypeString, value)
+	}
+	if ituo.mutation.DaemonIDCleared() {
+		_spec.ClearField(iperftest.FieldDaemonID, field.TypeString)
 	}
 	if ituo.mutation.HostCleared() {
 		edge := &sqlgraph.EdgeSpec{

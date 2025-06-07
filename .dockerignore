@@ -24,6 +24,7 @@ build/
 # Database files (these should be in volumes)
 *.db
 *.sqlite
+data/
 
 # Logs
 *.log

@@ -10,6 +10,7 @@ import (
 
 	"github.com/bfirestone/speed-checker/ent"
 	"github.com/bfirestone/speed-checker/ent/speedtest"
+	"github.com/bfirestone/speed-checker/internal/api"
 )
 
 type SpeedTestService struct {
@@ -131,4 +132,46 @@ func (s *SpeedTestService) GetSlowestTests(ctx context.Context, limit int) ([]*e
 
 func (s *SpeedTestService) GetTotalCount(ctx context.Context) (int, error) {
 	return s.client.SpeedTest.Query().Count(ctx)
+}
+
+// CreateFromSubmission creates a speed test record from an API submission
+func (s *SpeedTestService) CreateFromSubmission(ctx context.Context, submission api.SpeedTestSubmission) (*ent.SpeedTest, error) {
+	// Create the speed test record using Ent
+	builder := s.client.SpeedTest.
+		Create().
+		SetTimestamp(submission.Timestamp).
+		SetDownloadMbps(submission.DownloadMbps).
+		SetUploadMbps(submission.UploadMbps).
+		SetPingMs(submission.PingMs).
+		SetDaemonID(submission.DaemonId)
+
+	// Set optional fields if provided
+	if submission.JitterMs != nil {
+		builder.SetJitterMs(*submission.JitterMs)
+	}
+	if submission.ServerName != nil {
+		builder.SetServerName(*submission.ServerName)
+	}
+	if submission.ServerId != nil {
+		builder.SetServerID(*submission.ServerId)
+	}
+	if submission.Isp != nil {
+		builder.SetIsp(*submission.Isp)
+	}
+	if submission.ExternalIp != nil {
+		builder.SetExternalIP(*submission.ExternalIp)
+	}
+	if submission.ResultUrl != nil {
+		builder.SetResultURL(*submission.ResultUrl)
+	}
+
+	speedTest, err := builder.Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save speed test submission: %w", err)
+	}
+
+	log.Printf("Speed test submission saved - ID: %d, Daemon: %s, Download: %.2f Mbps, Upload: %.2f Mbps",
+		speedTest.ID, submission.DaemonId, submission.DownloadMbps, submission.UploadMbps)
+
+	return speedTest, nil
 }

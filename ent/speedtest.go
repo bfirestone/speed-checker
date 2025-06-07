@@ -36,7 +36,9 @@ type SpeedTest struct {
 	// External IP address
 	ExternalIP string `json:"external_ip,omitempty"`
 	// URL to full test results
-	ResultURL    string `json:"result_url,omitempty"`
+	ResultURL string `json:"result_url,omitempty"`
+	// Identifier of the daemon that performed the test
+	DaemonID     string `json:"daemon_id,omitempty"`
 	selectValues sql.SelectValues
 }
 
@@ -49,7 +51,7 @@ func (*SpeedTest) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case speedtest.FieldID:
 			values[i] = new(sql.NullInt64)
-		case speedtest.FieldServerName, speedtest.FieldServerID, speedtest.FieldIsp, speedtest.FieldExternalIP, speedtest.FieldResultURL:
+		case speedtest.FieldServerName, speedtest.FieldServerID, speedtest.FieldIsp, speedtest.FieldExternalIP, speedtest.FieldResultURL, speedtest.FieldDaemonID:
 			values[i] = new(sql.NullString)
 		case speedtest.FieldTimestamp:
 			values[i] = new(sql.NullTime)
@@ -134,6 +136,12 @@ func (st *SpeedTest) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				st.ResultURL = value.String
 			}
+		case speedtest.FieldDaemonID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field daemon_id", values[i])
+			} else if value.Valid {
+				st.DaemonID = value.String
+			}
 		default:
 			st.selectValues.Set(columns[i], values[i])
 		}
@@ -199,6 +207,9 @@ func (st *SpeedTest) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("result_url=")
 	builder.WriteString(st.ResultURL)
+	builder.WriteString(", ")
+	builder.WriteString("daemon_id=")
+	builder.WriteString(st.DaemonID)
 	builder.WriteByte(')')
 	return builder.String()
 }

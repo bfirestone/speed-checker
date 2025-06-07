@@ -1,117 +1,392 @@
-# Docker Setup for Speed Checker
+# Docker Deployment Guide
 
-This document explains how to run the Speed Checker application using Docker and Docker Compose.
+This guide covers all Docker deployment options for the Speed Checker application with modular frontend and backend builds.
 
-## Prerequisites
+## 🏗 **Architecture Overview**
 
-- Docker
-- Docker Compose
-- Network access for speed tests and iperf3
+### **Modular Build System**
+- **Backend**: `Dockerfile` - API server + daemon (Go 1.24, SQLite, OpenAPI)
+- **Frontend**: `frontend/Dockerfile` - SvelteKit application (Node.js 22, standalone)
 
-## Quick Start
+### **Docker Compose Options**
+- **Main**: `docker-compose.yml` - All deployment profiles
+- **API-focused**: `docker-compose.api.yml` - Streamlined API-centric setup
 
-1. **Build and run with Docker Compose:**
-   ```bash
-   docker-compose up --build
-   ```
+---
 
-2. **Access the application:**
-   - Open your browser to `http://localhost:8080`
-   - The dashboard will show speed tests and iperf tests
+## 🚀 **Quick Start**
 
-3. **Stop the application:**
-   ```bash
-   docker-compose down
-   ```
-
-## Configuration
-
-The application can be configured using environment variables in the `docker-compose.yml` file:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SPEED_CHECKER_SERVER_HOST` | `0.0.0.0` | Server bind address |
-| `SPEED_CHECKER_SERVER_PORT` | `8080` | Server port |
-| `SPEED_CHECKER_DATABASE_DSN` | `/app/data/speedtest_results.db?_fk=1` | SQLite database path |
-| `SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL` | `15m` | Interval between speed tests |
-| `SPEED_CHECKER_TESTING_IPERF_INTERVAL` | `10m` | Interval between iperf tests |
-| `SPEED_CHECKER_TESTING_IPERF_DURATION` | `10` | Duration of each iperf test in seconds |
-
-## Data Persistence
-
-The SQLite database is stored in a Docker volume mounted at `./data:/app/data`. This ensures your test data persists between container restarts.
-
-## Building Manually
-
-If you want to build the Docker image manually:
-
+### **API-Centric (Recommended)**
 ```bash
-# Build the image
+# Backend + daemon with API communication
+docker-compose -f docker-compose.api.yml up
+
+# Include standalone frontend
+docker-compose -f docker-compose.api.yml --profile frontend up
+```
+
+### **Traditional Monolithic**
+```bash
+# Single container with everything
+docker-compose up
+```
+
+---
+
+## 📦 **Individual Builds**
+
+### **Backend Only**
+```bash
+# Build
 docker build -t speed-checker .
 
-# Run the container
-docker run -d \
-  --name speed-checker \
+# Run API server
+docker run -p 8080:8080 -v ./data:/app/data speed-checker api
+
+# Run daemon (API mode)
+docker run speed-checker daemon --api-endpoint http://api-host:8080
+
+# Run daemon (legacy direct DB)
+docker run -v ./data:/app/data speed-checker daemon --legacy
+```
+
+### **Frontend Only**
+```bash
+# Build
+docker build -t speed-checker-frontend ./frontend
+
+# Run
+docker run -p 3000:3000 speed-checker-frontend
+```
+
+---
+
+## 🔧 **Docker Compose Profiles**
+
+### **Profile: `default` / `single`**
+**Traditional monolithic deployment**
+
+```bash
+docker-compose up
+# OR
+docker-compose --profile single up
+```
+
+**Services:**
+- `speed-checker-all`: API + daemon + database in one container
+
+**Use Cases:**
+- Development/testing
+- Simple single-host deployments
+- Backward compatibility
+
+---
+
+### **Profile: `api-centric`** ⭐ **Recommended**
+**Modern microservices architecture**
+
+```bash
+docker-compose --profile api-centric up
+```
+
+**Services:**
+- `speed-checker-api`: HTTP API server (port 8080)
+- `speed-checker-daemon-api`: Daemon using API communication
+
+**Benefits:**
+- Process isolation (failures don't cascade)
+- Horizontal scaling (multiple daemons)
+- Type-safe API communication
+- Production-ready architecture
+
+---
+
+### **Profile: `legacy`**
+**Separated services with direct DB access**
+
+```bash
+docker-compose --profile legacy up
+```
+
+**Services:**
+- `speed-checker-api`: HTTP API server
+- `speed-checker-daemon-legacy`: Daemon with direct database access
+
+**Use Cases:**
+- Migration testing
+- Backward compatibility verification
+
+---
+
+### **Profile: `scaling`**
+**Multiple daemons with different intervals**
+
+```bash
+docker-compose --profile api-centric --profile scaling up
+```
+
+**Services:**
+- `speed-checker-api`: API server
+- `speed-checker-daemon-api`: Primary daemon (15m speed, 10m iperf)
+- `speed-checker-daemon-api-2`: Secondary daemon (20m speed, 15m iperf)
+
+**Use Cases:**
+- High-frequency monitoring
+- Load distribution
+- Multiple network interfaces
+
+---
+
+### **Profile: `frontend`**
+**Standalone SvelteKit frontend**
+
+```bash
+docker-compose --profile frontend up speed-checker-frontend
+# OR with API backend
+docker-compose -f docker-compose.api.yml --profile frontend up
+```
+
+**Services:**
+- `speed-checker-frontend`: SvelteKit server (port 3000)
+
+**Use Cases:**
+- Separate frontend deployment
+- CDN/reverse proxy setups
+- Development with external API
+
+---
+
+## 🌐 **Production Deployment Examples**
+
+### **Single Host Setup**
+```bash
+# Complete stack with frontend
+docker-compose -f docker-compose.api.yml --profile frontend up -d
+
+# Access points:
+# - API: http://localhost:8080
+# - Frontend: http://localhost:3000
+```
+
+### **Multi-Host Setup**
+
+**Host 1 (API Server):**
+```bash
+docker run -d --name speed-checker-api \
   -p 8080:8080 \
-  -v $(pwd)/data:/app/data \
-  speed-checker
+  -v /data/speed-checker:/app/data \
+  speed-checker api
 ```
 
-## Health Checks
-
-The container includes health checks that verify the application is responding on the dashboard endpoint. You can check the health status with:
-
+**Host 2+ (Daemons):**
 ```bash
-docker-compose ps
+docker run -d --name speed-checker-daemon-1 \
+  -e SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=10m \
+  speed-checker daemon --api-endpoint http://api-host:8080
+
+docker run -d --name speed-checker-daemon-2 \
+  -e SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=30m \
+  speed-checker daemon --api-endpoint http://api-host:8080
 ```
 
-## Logs
-
-View application logs:
-
+**Host 3 (Frontend):**
 ```bash
-# All logs
-docker-compose logs
-
-# Follow logs
-docker-compose logs -f
-
-# Specific service logs
-docker-compose logs speed-checker
+docker run -d --name speed-checker-frontend \
+  -p 3000:3000 \
+  speed-checker-frontend
 ```
 
-## Troubleshooting
+### **Cloud/Kubernetes**
+```yaml
+# API Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speed-checker-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: speed-checker-api
+  template:
+    spec:
+      containers:
+      - name: api
+        image: speed-checker:latest
+        args: ["api"]
+        ports:
+        - containerPort: 8080
 
-### iperf3 Tests Failing
-- Ensure the target hosts are accessible from the container
-- Check that iperf3 servers are running on the target hosts
-- Verify firewall rules allow iperf3 traffic
+---
+# Daemon Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speed-checker-daemon
+spec:
+  replicas: 3  # Multiple daemons
+  selector:
+    matchLabels:
+      app: speed-checker-daemon
+  template:
+    spec:
+      containers:
+      - name: daemon
+        image: speed-checker:latest
+        args: ["daemon", "--api-endpoint", "http://speed-checker-api:8080"]
+```
 
-### Speed Tests Failing
-- Ensure internet connectivity from the container
-- The speedtest-cli tool is included in the container
+---
 
-### Database Issues
-- Check that the `./data` directory has proper permissions
-- Ensure the volume mount is working correctly
+## 🔧 **Configuration**
 
-## Development
+### **Environment Variables**
 
-For development, you can run the container with additional volume mounts:
-
+**API Server:**
 ```bash
-docker run -d \
-  --name speed-checker-dev \
-  -p 8080:8080 \
-  -v $(pwd)/data:/app/data \
-  -v $(pwd):/workspace \
-  speed-checker
+SPEED_CHECKER_DATABASE_DSN=/app/data/speedtest_results.db?_fk=1
+SPEED_CHECKER_SERVER_HOST=0.0.0.0
+SPEED_CHECKER_SERVER_PORT=8080
 ```
 
-## Container Details
+**Daemon:**
+```bash
+SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=15m
+SPEED_CHECKER_TESTING_IPERF_INTERVAL=10m
+SPEED_CHECKER_TESTING_IPERF_DURATION=10
+```
 
-- **Base Image:** Alpine Linux (minimal footprint)
-- **Included Tools:** speedtest-cli, iperf3, sqlite
-- **User:** Runs as non-root user (appuser:appgroup)
-- **Ports:** 8080 (HTTP)
-- **Health Check:** HTTP GET to `/api/v1/dashboard` 
+**Frontend:**
+```bash
+HOST=0.0.0.0
+PORT=3000
+```
+
+### **Volume Mounts**
+
+**API Server (Database persistence):**
+```bash
+-v ./data:/app/data
+```
+
+**Time synchronization (all containers):**
+```bash
+-v /etc/localtime:/etc/localtime:ro
+```
+
+---
+
+## 🩺 **Health Checks**
+
+### **API Server**
+```bash
+# HTTP endpoint check
+wget --no-verbose --tries=1 --spider http://localhost:8080/api/v1/dashboard
+```
+
+### **Daemon**
+```bash
+# Process check
+pgrep -f "speed-checker daemon"
+```
+
+### **Frontend**
+```bash
+# HTTP endpoint check
+wget --no-verbose --tries=1 --spider http://localhost:3000
+```
+
+---
+
+## 🔄 **Migration Path**
+
+### **From Monolithic to API-Centric**
+
+1. **Current**: `docker-compose up` (all in one)
+2. **Transition**: `docker-compose --profile legacy up` (separated with direct DB)
+3. **Target**: `docker-compose --profile api-centric up` (API communication)
+
+Each step maintains data compatibility with zero downtime.
+
+---
+
+## 🐛 **Troubleshooting**
+
+### **Build Issues**
+
+**Code generation fails:**
+```bash
+# Ensure generated files are present
+make generate
+```
+
+**Frontend build errors:**
+```bash
+cd frontend
+npm install --legacy-peer-deps
+npm run build
+```
+
+### **Runtime Issues**
+
+**Daemon can't connect to API:**
+```bash
+# Check network connectivity
+docker exec daemon-container wget -O- http://api-container:8080/api/v1/dashboard
+```
+
+**Database permissions:**
+```bash
+# Fix ownership
+docker exec api-container chown -R appuser:appgroup /app/data
+```
+
+**Frontend not accessible:**
+```bash
+# Check SvelteKit adapter
+# Ensure @sveltejs/adapter-node is installed
+cd frontend && npm list @sveltejs/adapter-node
+```
+
+---
+
+## 📊 **Performance Considerations**
+
+### **Resource Requirements**
+
+**API Server:**
+- CPU: 1 core
+- Memory: 512MB
+- Disk: 10GB (database growth)
+
+**Daemon:**
+- CPU: 0.5 cores
+- Memory: 256MB
+- Network: Requires external connectivity
+
+**Frontend:**
+- CPU: 0.5 cores
+- Memory: 256MB
+- Disk: 100MB
+
+### **Scaling Guidelines**
+
+**Horizontal (Multiple Daemons):**
+```bash
+# Different intervals to spread load
+-e SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=10m  # Fast
+-e SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=30m  # Slow
+```
+
+**Vertical (Resource Limits):**
+```yaml
+resources:
+  limits:
+    memory: "512Mi"
+    cpu: "1000m"
+  requests:
+    memory: "256Mi"
+    cpu: "500m"
+```
+
+This modular Docker architecture supports everything from simple development setups to complex production deployments with full separation of concerns! 🎉 

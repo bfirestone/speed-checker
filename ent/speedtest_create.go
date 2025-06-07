@@ -136,6 +136,20 @@ func (stc *SpeedTestCreate) SetNillableResultURL(s *string) *SpeedTestCreate {
 	return stc
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (stc *SpeedTestCreate) SetDaemonID(s string) *SpeedTestCreate {
+	stc.mutation.SetDaemonID(s)
+	return stc
+}
+
+// SetNillableDaemonID sets the "daemon_id" field if the given value is not nil.
+func (stc *SpeedTestCreate) SetNillableDaemonID(s *string) *SpeedTestCreate {
+	if s != nil {
+		stc.SetDaemonID(*s)
+	}
+	return stc
+}
+
 // Mutation returns the SpeedTestMutation object of the builder.
 func (stc *SpeedTestCreate) Mutation() *SpeedTestMutation {
 	return stc.mutation
@@ -256,6 +270,10 @@ func (stc *SpeedTestCreate) createSpec() (*SpeedTest, *sqlgraph.CreateSpec) {
 	if value, ok := stc.mutation.ResultURL(); ok {
 		_spec.SetField(speedtest.FieldResultURL, field.TypeString, value)
 		_node.ResultURL = value
+	}
+	if value, ok := stc.mutation.DaemonID(); ok {
+		_spec.SetField(speedtest.FieldDaemonID, field.TypeString, value)
+		_node.DaemonID = value
 	}
 	return _node, _spec
 }

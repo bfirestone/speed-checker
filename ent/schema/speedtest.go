@@ -41,6 +41,9 @@ func (SpeedTest) Fields() []ent.Field {
 		field.String("result_url").
 			Optional().
 			Comment("URL to full test results"),
+		field.String("daemon_id").
+			Optional().
+			Comment("Identifier of the daemon that performed the test"),
 	}
 }
 

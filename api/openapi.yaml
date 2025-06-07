@@ -1,0 +1,697 @@
+openapi: 3.0.3
+info:
+  title: Speed Checker API
+  description: |
+    API for submitting and retrieving network speed test and iperf test results.
+    This API serves as the central data layer for speed checker daemons and web dashboard.
+  version: 1.0.0
+  contact:
+    name: Speed Checker API
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development server
+  - url: https://speedcheck.example.com/api/v1
+    description: Production server
+
+paths:
+  # Speed Test Endpoints
+  /speedtest/results:
+    post:
+      summary: Submit speed test results
+      description: Submit a new speed test result from a daemon
+      operationId: submitSpeedTest
+      tags:
+        - speedtest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SpeedTestSubmission'
+      responses:
+        '201':
+          description: Speed test result submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpeedTestResult'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Get speed test results
+      description: Retrieve speed test results with optional filtering
+      operationId: getSpeedTests
+      tags:
+        - speedtest
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of results to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: start_time
+          in: query
+          description: Filter results after this timestamp (RFC3339)
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          description: Filter results before this timestamp (RFC3339)
+          schema:
+            type: string
+            format: date-time
+        - name: daemon_id
+          in: query
+          description: Filter by daemon ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Speed test results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SpeedTestResult'
+                  total:
+                    type: integer
+                    description: Total number of matching results
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Iperf Test Endpoints
+  /iperf/results:
+    post:
+      summary: Submit iperf test results
+      description: Submit new iperf test results from a daemon
+      operationId: submitIperfTest
+      tags:
+        - iperf
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IperfTestSubmission'
+      responses:
+        '201':
+          description: Iperf test result submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IperfTestResult'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    get:
+      summary: Get iperf test results
+      description: Retrieve iperf test results with optional filtering
+      operationId: getIperfTests
+      tags:
+        - iperf
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of results to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: offset
+          in: query
+          description: Number of results to skip
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: start_time
+          in: query
+          description: Filter results after this timestamp (RFC3339)
+          schema:
+            type: string
+            format: date-time
+        - name: end_time
+          in: query
+          description: Filter results before this timestamp (RFC3339)
+          schema:
+            type: string
+            format: date-time
+        - name: host_id
+          in: query
+          description: Filter by host ID
+          schema:
+            type: integer
+        - name: daemon_id
+          in: query
+          description: Filter by daemon ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Iperf test results retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/IperfTestResult'
+                  total:
+                    type: integer
+                    description: Total number of matching results
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+
+  # Host Management Endpoints
+  /hosts:
+    get:
+      summary: Get iperf test hosts
+      description: Retrieve configured iperf test hosts
+      operationId: getHosts
+      tags:
+        - hosts
+      parameters:
+        - name: type
+          in: query
+          description: Filter by host type
+          schema:
+            $ref: '#/components/schemas/HostType'
+        - name: active
+          in: query
+          description: Filter by active status
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Hosts retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Host'
+
+    post:
+      summary: Add new host
+      description: Add a new iperf test host
+      operationId: addHost
+      tags:
+        - hosts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostCreation'
+      responses:
+        '201':
+          description: Host created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Host'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /hosts/{hostId}:
+    parameters:
+      - name: hostId
+        in: path
+        required: true
+        description: Host ID
+        schema:
+          type: integer
+          minimum: 1
+
+    get:
+      summary: Get host by ID
+      description: Retrieve a specific host by its ID
+      operationId: getHost
+      tags:
+        - hosts
+      responses:
+        '200':
+          description: Host retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Host'
+        '404':
+          description: Host not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update host
+      description: Update an existing host configuration
+      operationId: updateHost
+      tags:
+        - hosts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HostUpdate'
+      responses:
+        '200':
+          description: Host updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Host'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Host not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete host
+      description: Delete a host from the system
+      operationId: deleteHost
+      tags:
+        - hosts
+      responses:
+        '204':
+          description: Host deleted successfully
+        '404':
+          description: Host not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # Dashboard Endpoint
+  /dashboard:
+    get:
+      summary: Get dashboard data
+      description: Retrieve dashboard summary data including recent tests and statistics
+      operationId: getDashboard
+      tags:
+        - dashboard
+      responses:
+        '200':
+          description: Dashboard data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardData'
+
+components:
+  schemas:
+    SpeedTestSubmission:
+      type: object
+      required:
+        - timestamp
+        - download_mbps
+        - upload_mbps
+        - ping_ms
+        - daemon_id
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: When the test was performed (RFC3339)
+          example: "2024-01-15T10:30:00Z"
+        download_mbps:
+          type: number
+          format: double
+          minimum: 0
+          description: Download speed in Mbps
+          example: 917.29
+        upload_mbps:
+          type: number
+          format: double
+          minimum: 0
+          description: Upload speed in Mbps
+          example: 353.52
+        ping_ms:
+          type: number
+          format: double
+          minimum: 0
+          description: Ping latency in milliseconds
+          example: 15.94
+        jitter_ms:
+          type: number
+          format: double
+          minimum: 0
+          description: Jitter in milliseconds
+          example: 2.1
+        server_name:
+          type: string
+          description: Speed test server name
+          example: "Comcast"
+        server_id:
+          type: string
+          description: Speed test server ID
+          example: "12345"
+        isp:
+          type: string
+          description: Internet Service Provider
+          example: "Comcast Cable"
+        external_ip:
+          type: string
+          description: External IP address used for the test
+          example: "203.0.113.1"
+        result_url:
+          type: string
+          format: uri
+          description: URL to full test results
+          example: "https://www.speedtest.net/result/12345"
+        daemon_id:
+          type: string
+          description: Identifier of the daemon that performed the test
+          example: "daemon-001"
+
+    SpeedTestResult:
+      allOf:
+        - $ref: '#/components/schemas/SpeedTestSubmission'
+        - type: object
+          required:
+            - id
+            - created_at
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for the test result
+              example: 12345
+            created_at:
+              type: string
+              format: date-time
+              description: When the result was stored in the system
+              example: "2024-01-15T10:30:05Z"
+
+    IperfTestSubmission:
+      type: object
+      required:
+        - timestamp
+        - host_id
+        - sent_mbps
+        - received_mbps
+        - protocol
+        - duration_seconds
+        - daemon_id
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: When the test was performed (RFC3339)
+          example: "2024-01-15T10:30:00Z"
+        host_id:
+          type: integer
+          description: ID of the target host
+          example: 1
+        sent_mbps:
+          type: number
+          format: double
+          minimum: 0
+          description: Sent throughput in Mbps
+          example: 985.2
+        received_mbps:
+          type: number
+          format: double
+          minimum: 0
+          description: Received throughput in Mbps
+          example: 983.1
+        mean_rtt_ms:
+          type: number
+          format: double
+          minimum: 0
+          description: Mean round-trip time in milliseconds
+          example: 1.2
+        retransmits:
+          type: number
+          format: double
+          minimum: 0
+          description: Number of retransmitted packets
+          example: 0
+        protocol:
+          type: string
+          enum: [TCP, UDP]
+          description: Protocol used for the test
+          example: "TCP"
+        duration_seconds:
+          type: integer
+          minimum: 1
+          description: Test duration in seconds
+          example: 10
+        daemon_id:
+          type: string
+          description: Identifier of the daemon that performed the test
+          example: "daemon-001"
+
+    IperfTestResult:
+      allOf:
+        - $ref: '#/components/schemas/IperfTestSubmission'
+        - type: object
+          required:
+            - id
+            - created_at
+            - host
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for the test result
+              example: 12345
+            created_at:
+              type: string
+              format: date-time
+              description: When the result was stored in the system
+              example: "2024-01-15T10:30:05Z"
+            host:
+              $ref: '#/components/schemas/Host'
+            success:
+              type: boolean
+              description: Whether the test was successful
+              example: true
+            error_message:
+              type: string
+              description: Error message if test failed
+              example: "Connection timeout"
+
+    HostType:
+      type: string
+      enum: [lan, vpn, remote]
+      description: Type of host for categorizing network tests
+
+    HostCreation:
+      type: object
+      required:
+        - name
+        - hostname
+        - type
+        - port
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Human-readable name for the host
+          example: "Main Server"
+        hostname:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Hostname or IP address
+          example: "192.168.1.100"
+        type:
+          $ref: '#/components/schemas/HostType'
+        port:
+          type: integer
+          minimum: 1
+          maximum: 65535
+          description: Port number for iperf3 server
+          example: 5201
+        description:
+          type: string
+          maxLength: 500
+          description: Optional description of the host
+          example: "Primary LAN server for performance testing"
+        active:
+          type: boolean
+          description: Whether the host is active for testing
+          default: true
+
+    HostUpdate:
+      allOf:
+        - $ref: '#/components/schemas/HostCreation'
+        - type: object
+          properties:
+            active:
+              type: boolean
+              description: Whether the host is active for testing
+
+    Host:
+      allOf:
+        - $ref: '#/components/schemas/HostCreation'
+        - type: object
+          required:
+            - id
+            - created_at
+            - updated_at
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for the host
+              example: 1
+            created_at:
+              type: string
+              format: date-time
+              description: When the host was created
+              example: "2024-01-15T10:00:00Z"
+            updated_at:
+              type: string
+              format: date-time
+              description: When the host was last updated
+              example: "2024-01-15T10:30:00Z"
+
+    DashboardData:
+      type: object
+      required:
+        - recent_speed_tests
+        - recent_iperf_tests
+        - statistics
+      properties:
+        recent_speed_tests:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpeedTestResult'
+          description: Recent speed test results
+        recent_iperf_tests:
+          type: array
+          items:
+            $ref: '#/components/schemas/IperfTestResult'
+          description: Recent iperf test results
+        statistics:
+          type: object
+          properties:
+            total_speed_tests:
+              type: integer
+              description: Total number of speed tests
+              example: 1542
+            total_iperf_tests:
+              type: integer
+              description: Total number of iperf tests
+              example: 3821
+            active_hosts:
+              type: integer
+              description: Number of active hosts
+              example: 5
+            avg_download_mbps:
+              type: number
+              format: double
+              description: Average download speed over last 24h
+              example: 458.2
+            avg_upload_mbps:
+              type: number
+              format: double
+              description: Average upload speed over last 24h
+              example: 189.7
+
+    Error:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+          example: "validation_error"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "The 'download_mbps' field is required and must be a positive number"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true
+
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for service-to-service authentication
+
+# Apply security to all operations by default
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: speedtest
+    description: Speed test result operations
+  - name: iperf
+    description: Iperf test result operations
+  - name: hosts
+    description: Host management operations
+  - name: dashboard
+    description: Dashboard data operations 

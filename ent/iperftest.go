@@ -36,6 +36,8 @@ type IperfTest struct {
 	Success bool `json:"success,omitempty"`
 	// Error message if test failed
 	ErrorMessage string `json:"error_message,omitempty"`
+	// Identifier of the daemon that performed the test
+	DaemonID string `json:"daemon_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the IperfTestQuery when eager-loading is set.
 	Edges            IperfTestEdges `json:"edges"`
@@ -74,7 +76,7 @@ func (*IperfTest) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case iperftest.FieldID, iperftest.FieldDurationSeconds:
 			values[i] = new(sql.NullInt64)
-		case iperftest.FieldProtocol, iperftest.FieldErrorMessage:
+		case iperftest.FieldProtocol, iperftest.FieldErrorMessage, iperftest.FieldDaemonID:
 			values[i] = new(sql.NullString)
 		case iperftest.FieldTimestamp:
 			values[i] = new(sql.NullTime)
@@ -155,6 +157,12 @@ func (it *IperfTest) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				it.ErrorMessage = value.String
 			}
+		case iperftest.FieldDaemonID:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field daemon_id", values[i])
+			} else if value.Valid {
+				it.DaemonID = value.String
+			}
 		case iperftest.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for edge-field host_iperf_tests", value)
@@ -229,6 +237,9 @@ func (it *IperfTest) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("error_message=")
 	builder.WriteString(it.ErrorMessage)
+	builder.WriteString(", ")
+	builder.WriteString("daemon_id=")
+	builder.WriteString(it.DaemonID)
 	builder.WriteByte(')')
 	return builder.String()
 }

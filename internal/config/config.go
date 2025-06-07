@@ -21,8 +21,19 @@ type ServerConfig struct {
 }
 
 type DatabaseConfig struct {
-	Driver string `mapstructure:"driver"`
-	DSN    string `mapstructure:"dsn"`
+	Driver   string `mapstructure:"driver"`
+	Host     string `mapstructure:"host"`
+	Port     string `mapstructure:"port"`
+	Database string `mapstructure:"db"`
+	User     string `mapstructure:"user"`
+	Password string `mapstructure:"password"`
+	SSLMode  string `mapstructure:"sslmode"`
+}
+
+// DSN constructs the PostgreSQL connection string from individual config fields
+func (d DatabaseConfig) DSN() string {
+	return fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
+		d.Host, d.Port, d.User, d.Password, d.Database, d.SSLMode)
 }
 
 type TestingConfig struct {
@@ -38,11 +49,24 @@ func Load() (*Config, error) {
 	v.AutomaticEnv()
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 
+	// Also bind to standard PostgreSQL environment variables
+	v.BindEnv("database.host", "POSTGRES_HOST")
+	v.BindEnv("database.port", "POSTGRES_PORT")
+	v.BindEnv("database.db", "POSTGRES_DB")
+	v.BindEnv("database.user", "POSTGRES_USER")
+	v.BindEnv("database.password", "POSTGRES_PASSWORD")
+	v.BindEnv("database.sslmode", "POSTGRES_SSLMODE")
+
 	// Set defaults
 	v.SetDefault("server.port", "8080")
 	v.SetDefault("server.host", "localhost")
-	v.SetDefault("database.driver", "sqlite3")
-	v.SetDefault("database.dsn", "./speedtest_results.db?_fk=1")
+	v.SetDefault("database.driver", "postgres")
+	v.SetDefault("database.host", "localhost")
+	v.SetDefault("database.port", "5432")
+	v.SetDefault("database.db", "speedchecker")
+	v.SetDefault("database.user", "speedchecker")
+	v.SetDefault("database.password", "")
+	v.SetDefault("database.sslmode", "disable")
 	v.SetDefault("testing.speedtest_interval", "15m")
 	v.SetDefault("testing.iperf_interval", "10m")
 	v.SetDefault("testing.iperf_duration", 10)

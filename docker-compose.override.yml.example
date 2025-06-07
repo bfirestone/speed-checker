@@ -1,0 +1,64 @@
+# Example Docker Compose Override
+# Copy to docker-compose.override.yml and customize for your environment
+
+version: '3.8'
+
+services:
+  # Scale API service for high availability
+  speed-checker-api:
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    environment:
+      - SPEED_CHECKER_SERVER_PORT=8080
+    # Load balancer will handle multiple instances
+    
+  # Enhanced daemon configuration
+  speed-checker-daemon:
+    environment:
+      - SPEED_CHECKER_TESTING_SPEEDTEST_INTERVAL=10m
+      - SPEED_CHECKER_TESTING_IPERF_INTERVAL=5m
+      - SPEED_CHECKER_TESTING_IPERF_DURATION=15
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.3'
+
+  # Optional: Add nginx load balancer for API scaling
+  nginx:
+    image: nginx:alpine
+    container_name: speed-checker-lb
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - speed-checker-api
+    networks:
+      - speed-checker-network
+    profiles:
+      - scaling
+      - production
+
+  # Optional: Add monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: speed-checker-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    networks:
+      - speed-checker-network
+    profiles:
+      - monitoring
+
+# Example usage:
+# docker-compose --profile separated --profile scaling up -d 

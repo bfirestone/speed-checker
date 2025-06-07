@@ -32,6 +32,8 @@ const (
 	FieldSuccess = "success"
 	// FieldErrorMessage holds the string denoting the error_message field in the database.
 	FieldErrorMessage = "error_message"
+	// FieldDaemonID holds the string denoting the daemon_id field in the database.
+	FieldDaemonID = "daemon_id"
 	// EdgeHost holds the string denoting the host edge name in mutations.
 	EdgeHost = "host"
 	// Table holds the table name of the iperftest in the database.
@@ -57,6 +59,7 @@ var Columns = []string{
 	FieldProtocol,
 	FieldSuccess,
 	FieldErrorMessage,
+	FieldDaemonID,
 }
 
 // ForeignKeys holds the SQL foreign-keys that are owned by the "iperf_tests"
@@ -142,6 +145,11 @@ func BySuccess(opts ...sql.OrderTermOption) OrderOption {
 // ByErrorMessage orders the results by the error_message field.
 func ByErrorMessage(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldErrorMessage, opts...).ToFunc()
+}
+
+// ByDaemonID orders the results by the daemon_id field.
+func ByDaemonID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDaemonID, opts...).ToFunc()
 }
 
 // ByHostField orders the results by host field.

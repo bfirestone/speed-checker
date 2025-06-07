@@ -100,6 +100,11 @@ func ErrorMessage(v string) predicate.IperfTest {
 	return predicate.IperfTest(sql.FieldEQ(FieldErrorMessage, v))
 }
 
+// DaemonID applies equality check predicate on the "daemon_id" field. It's identical to DaemonIDEQ.
+func DaemonID(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldEQ(FieldDaemonID, v))
+}
+
 // TimestampEQ applies the EQ predicate on the "timestamp" field.
 func TimestampEQ(v time.Time) predicate.IperfTest {
 	return predicate.IperfTest(sql.FieldEQ(FieldTimestamp, v))
@@ -508,6 +513,81 @@ func ErrorMessageEqualFold(v string) predicate.IperfTest {
 // ErrorMessageContainsFold applies the ContainsFold predicate on the "error_message" field.
 func ErrorMessageContainsFold(v string) predicate.IperfTest {
 	return predicate.IperfTest(sql.FieldContainsFold(FieldErrorMessage, v))
+}
+
+// DaemonIDEQ applies the EQ predicate on the "daemon_id" field.
+func DaemonIDEQ(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldEQ(FieldDaemonID, v))
+}
+
+// DaemonIDNEQ applies the NEQ predicate on the "daemon_id" field.
+func DaemonIDNEQ(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldNEQ(FieldDaemonID, v))
+}
+
+// DaemonIDIn applies the In predicate on the "daemon_id" field.
+func DaemonIDIn(vs ...string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldIn(FieldDaemonID, vs...))
+}
+
+// DaemonIDNotIn applies the NotIn predicate on the "daemon_id" field.
+func DaemonIDNotIn(vs ...string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldNotIn(FieldDaemonID, vs...))
+}
+
+// DaemonIDGT applies the GT predicate on the "daemon_id" field.
+func DaemonIDGT(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldGT(FieldDaemonID, v))
+}
+
+// DaemonIDGTE applies the GTE predicate on the "daemon_id" field.
+func DaemonIDGTE(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldGTE(FieldDaemonID, v))
+}
+
+// DaemonIDLT applies the LT predicate on the "daemon_id" field.
+func DaemonIDLT(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldLT(FieldDaemonID, v))
+}
+
+// DaemonIDLTE applies the LTE predicate on the "daemon_id" field.
+func DaemonIDLTE(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldLTE(FieldDaemonID, v))
+}
+
+// DaemonIDContains applies the Contains predicate on the "daemon_id" field.
+func DaemonIDContains(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldContains(FieldDaemonID, v))
+}
+
+// DaemonIDHasPrefix applies the HasPrefix predicate on the "daemon_id" field.
+func DaemonIDHasPrefix(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldHasPrefix(FieldDaemonID, v))
+}
+
+// DaemonIDHasSuffix applies the HasSuffix predicate on the "daemon_id" field.
+func DaemonIDHasSuffix(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldHasSuffix(FieldDaemonID, v))
+}
+
+// DaemonIDIsNil applies the IsNil predicate on the "daemon_id" field.
+func DaemonIDIsNil() predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldIsNull(FieldDaemonID))
+}
+
+// DaemonIDNotNil applies the NotNil predicate on the "daemon_id" field.
+func DaemonIDNotNil() predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldNotNull(FieldDaemonID))
+}
+
+// DaemonIDEqualFold applies the EqualFold predicate on the "daemon_id" field.
+func DaemonIDEqualFold(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldEqualFold(FieldDaemonID, v))
+}
+
+// DaemonIDContainsFold applies the ContainsFold predicate on the "daemon_id" field.
+func DaemonIDContainsFold(v string) predicate.IperfTest {
+	return predicate.IperfTest(sql.FieldContainsFold(FieldDaemonID, v))
 }
 
 // HasHost applies the HasEdge predicate on the "host" edge.

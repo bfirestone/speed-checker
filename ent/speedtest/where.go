@@ -104,6 +104,11 @@ func ResultURL(v string) predicate.SpeedTest {
 	return predicate.SpeedTest(sql.FieldEQ(FieldResultURL, v))
 }
 
+// DaemonID applies equality check predicate on the "daemon_id" field. It's identical to DaemonIDEQ.
+func DaemonID(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldEQ(FieldDaemonID, v))
+}
+
 // TimestampEQ applies the EQ predicate on the "timestamp" field.
 func TimestampEQ(v time.Time) predicate.SpeedTest {
 	return predicate.SpeedTest(sql.FieldEQ(FieldTimestamp, v))
@@ -687,6 +692,81 @@ func ResultURLEqualFold(v string) predicate.SpeedTest {
 // ResultURLContainsFold applies the ContainsFold predicate on the "result_url" field.
 func ResultURLContainsFold(v string) predicate.SpeedTest {
 	return predicate.SpeedTest(sql.FieldContainsFold(FieldResultURL, v))
+}
+
+// DaemonIDEQ applies the EQ predicate on the "daemon_id" field.
+func DaemonIDEQ(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldEQ(FieldDaemonID, v))
+}
+
+// DaemonIDNEQ applies the NEQ predicate on the "daemon_id" field.
+func DaemonIDNEQ(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldNEQ(FieldDaemonID, v))
+}
+
+// DaemonIDIn applies the In predicate on the "daemon_id" field.
+func DaemonIDIn(vs ...string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldIn(FieldDaemonID, vs...))
+}
+
+// DaemonIDNotIn applies the NotIn predicate on the "daemon_id" field.
+func DaemonIDNotIn(vs ...string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldNotIn(FieldDaemonID, vs...))
+}
+
+// DaemonIDGT applies the GT predicate on the "daemon_id" field.
+func DaemonIDGT(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldGT(FieldDaemonID, v))
+}
+
+// DaemonIDGTE applies the GTE predicate on the "daemon_id" field.
+func DaemonIDGTE(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldGTE(FieldDaemonID, v))
+}
+
+// DaemonIDLT applies the LT predicate on the "daemon_id" field.
+func DaemonIDLT(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldLT(FieldDaemonID, v))
+}
+
+// DaemonIDLTE applies the LTE predicate on the "daemon_id" field.
+func DaemonIDLTE(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldLTE(FieldDaemonID, v))
+}
+
+// DaemonIDContains applies the Contains predicate on the "daemon_id" field.
+func DaemonIDContains(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldContains(FieldDaemonID, v))
+}
+
+// DaemonIDHasPrefix applies the HasPrefix predicate on the "daemon_id" field.
+func DaemonIDHasPrefix(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldHasPrefix(FieldDaemonID, v))
+}
+
+// DaemonIDHasSuffix applies the HasSuffix predicate on the "daemon_id" field.
+func DaemonIDHasSuffix(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldHasSuffix(FieldDaemonID, v))
+}
+
+// DaemonIDIsNil applies the IsNil predicate on the "daemon_id" field.
+func DaemonIDIsNil() predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldIsNull(FieldDaemonID))
+}
+
+// DaemonIDNotNil applies the NotNil predicate on the "daemon_id" field.
+func DaemonIDNotNil() predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldNotNull(FieldDaemonID))
+}
+
+// DaemonIDEqualFold applies the EqualFold predicate on the "daemon_id" field.
+func DaemonIDEqualFold(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldEqualFold(FieldDaemonID, v))
+}
+
+// DaemonIDContainsFold applies the ContainsFold predicate on the "daemon_id" field.
+func DaemonIDContainsFold(v string) predicate.SpeedTest {
+	return predicate.SpeedTest(sql.FieldContainsFold(FieldDaemonID, v))
 }
 
 // And groups predicates with the AND operator between them.

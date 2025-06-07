@@ -11,6 +11,7 @@ import (
 
 	"github.com/bfirestone/speed-checker/ent"
 	"github.com/bfirestone/speed-checker/ent/host"
+	"github.com/bfirestone/speed-checker/internal/api"
 )
 
 type IperfService struct {
@@ -304,4 +305,49 @@ func (s *IperfService) GetSlowestTests(ctx context.Context, limit int) ([]*ent.I
 
 func (s *IperfService) GetTotalCount(ctx context.Context) (int, error) {
 	return s.client.IperfTest.Query().Count(ctx)
+}
+
+// CreateFromSubmission creates an iperf test record from an API submission
+func (s *IperfService) CreateFromSubmission(ctx context.Context, submission api.IperfTestSubmission) (*ent.IperfTest, error) {
+	// Get the host by ID
+	targetHost, err := s.client.Host.Get(ctx, submission.HostId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find host with ID %d: %w", submission.HostId, err)
+	}
+
+	// Create the iperf test record using Ent
+	builder := s.client.IperfTest.
+		Create().
+		SetHost(targetHost).
+		SetTimestamp(submission.Timestamp).
+		SetSentMbps(submission.SentMbps).
+		SetReceivedMbps(submission.ReceivedMbps).
+		SetProtocol(string(submission.Protocol)).
+		SetDurationSeconds(submission.DurationSeconds).
+		SetDaemonID(submission.DaemonId)
+
+	// Determine success based on whether we have meaningful throughput
+	success := submission.SentMbps > 0 || submission.ReceivedMbps > 0
+	builder.SetSuccess(success)
+
+	// Set optional fields if provided
+	if submission.MeanRttMs != nil {
+		builder.SetMeanRttMs(*submission.MeanRttMs)
+	}
+	if submission.Retransmits != nil {
+		builder.SetRetransmits(*submission.Retransmits)
+	}
+
+	iperfTest, err := builder.Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to save iperf test submission: %w", err)
+	}
+
+	// Set the host edge manually since we already have the host
+	iperfTest.Edges.Host = targetHost
+
+	log.Printf("Iperf test submission saved - ID: %d, Daemon: %s, Host: %s, Sent: %.2f Mbps, Received: %.2f Mbps",
+		iperfTest.ID, submission.DaemonId, targetHost.Name, submission.SentMbps, submission.ReceivedMbps)
+
+	return iperfTest, nil
 }

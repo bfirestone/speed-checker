@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { browser } from '$app/environment';
+	import { apiUrl } from '$lib/config';
+	
+	export let data: { dashboardData: DashboardData };
 
 	interface SpeedTest {
 		id: number;
@@ -40,18 +43,17 @@
 	}
 
 	interface DashboardData {
-		speed_tests: SpeedTest[];
-		iperf_tests: IperfTest[];
-		hosts: Host[];
-		summary: {
+		recent_speed_tests: SpeedTest[];
+		recent_iperf_tests: IperfTest[];
+		statistics: {
 			total_speed_tests: number;
 			total_iperf_tests: number;
 			active_hosts: number;
 		};
 	}
 
-	let dashboardData: DashboardData | null = null;
-	let loading = true;
+	let dashboardData: DashboardData | null = data.dashboardData;
+	let loading = false;
 	let error: string | null = null;
 
 	// Filter states
@@ -76,14 +78,14 @@
 		
 		try {
 			loading = true;
-			const response = await fetch('/api/v1/dashboard');
+			const response = await fetch(apiUrl('/api/v1/dashboard'));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			dashboardData = await response.json();
 			// Debug logging
-			if (dashboardData && dashboardData.iperf_tests && dashboardData.iperf_tests.length > 0) {
-				console.log('Dashboard iperf test sample:', dashboardData.iperf_tests[0]);
+			if (dashboardData && dashboardData.recent_iperf_tests && dashboardData.recent_iperf_tests.length > 0) {
+				console.log('Dashboard iperf test sample:', dashboardData.recent_iperf_tests[0]);
 			}
 			// Apply filters when data is loaded
 			applySpeedTestFilters();
@@ -111,7 +113,7 @@
 				params.append('slowest', 'true');
 			}
 
-			const response = await fetch(`/api/v1/speedtest?${params}`);
+			const response = await fetch(apiUrl(`/api/v1/speedtest?${params}`));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -120,7 +122,7 @@
 			filteredSpeedTests = result.data || [];
 		} catch (e) {
 			console.error('Failed to fetch filtered speed tests:', e);
-			filteredSpeedTests = dashboardData?.speed_tests || [];
+			filteredSpeedTests = dashboardData?.recent_speed_tests || [];
 		}
 	}
 
@@ -143,7 +145,7 @@
 				params.append('slowest', 'true');
 			}
 
-			const response = await fetch(`/api/v1/iperf?${params}`);
+			const response = await fetch(apiUrl(`/api/v1/iperf?${params}`));
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -156,7 +158,7 @@
 			}
 		} catch (e) {
 			console.error('Failed to fetch filtered iperf tests:', e);
-			filteredIperfTests = dashboardData?.iperf_tests || [];
+			filteredIperfTests = dashboardData?.recent_iperf_tests || [];
 		}
 	}
 
@@ -175,7 +177,7 @@
 
 	async function runSpeedTest() {
 		try {
-			const response = await fetch('/api/v1/speedtest/run', { method: 'POST' });
+			const response = await fetch(apiUrl('/api/v1/speedtest/run'), { method: 'POST' });
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -188,7 +190,7 @@
 
 	async function runIperfTests() {
 		try {
-			const response = await fetch('/api/v1/iperf/run', { method: 'POST' });
+			const response = await fetch(apiUrl('/api/v1/iperf/run'), { method: 'POST' });
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
@@ -258,7 +260,7 @@
 				</div>
 			</div>
 		</div>
-	{:else if dashboardData}
+	{:else if dashboardData && dashboardData.statistics}
 		<!-- Summary Cards -->
 		<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 			<div class="bg-white overflow-hidden shadow rounded-lg">
@@ -274,7 +276,7 @@
 						<div class="ml-5 w-0 flex-1">
 							<dl>
 								<dt class="text-sm font-medium text-gray-500 truncate">Speed Tests</dt>
-								<dd class="text-lg font-medium text-gray-900">{dashboardData.summary.total_speed_tests}</dd>
+								<dd class="text-lg font-medium text-gray-900">{dashboardData.statistics.total_speed_tests}</dd>
 							</dl>
 						</div>
 					</div>
@@ -294,7 +296,7 @@
 						<div class="ml-5 w-0 flex-1">
 							<dl>
 								<dt class="text-sm font-medium text-gray-500 truncate">Iperf Tests</dt>
-								<dd class="text-lg font-medium text-gray-900">{dashboardData.summary.total_iperf_tests}</dd>
+								<dd class="text-lg font-medium text-gray-900">{dashboardData.statistics.total_iperf_tests}</dd>
 							</dl>
 						</div>
 					</div>
@@ -314,7 +316,7 @@
 						<div class="ml-5 w-0 flex-1">
 							<dl>
 								<dt class="text-sm font-medium text-gray-500 truncate">Active Hosts</dt>
-								<dd class="text-lg font-medium text-gray-900">{dashboardData.summary.active_hosts}</dd>
+								<dd class="text-lg font-medium text-gray-900">{dashboardData.statistics.active_hosts}</dd>
 							</dl>
 						</div>
 					</div>
@@ -529,28 +531,29 @@
 		</div>
 
 		<!-- Active Hosts -->
-		{#if dashboardData.hosts.length > 0}
-			<div class="mt-8 bg-white shadow rounded-lg">
-				<div class="px-4 py-5 sm:p-6">
-					<h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Active Hosts</h3>
-					<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-						{#each dashboardData.hosts as host}
-							<div class="border rounded-lg p-4">
-								<div class="flex items-center justify-between">
-									<h4 class="font-medium text-gray-900">{host.name}</h4>
-									<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-										{host.type === 'lan' ? 'bg-blue-100 text-blue-800' : 
-										 host.type === 'vpn' ? 'bg-purple-100 text-purple-800' : 
-										 'bg-gray-100 text-gray-800'}">
-										{host.type.toUpperCase()}
-									</span>
-								</div>
-								<p class="text-sm text-gray-500 mt-1">{host.hostname}</p>
-							</div>
-						{/each}
-					</div>
+		<div class="mt-8 bg-white shadow rounded-lg">
+			<div class="px-4 py-5 sm:p-6">
+				<h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Active Hosts</h3>
+				<div class="text-center py-8">
+					<p class="text-gray-500 mb-4">Host information is available on the dedicated hosts page</p>
+					<a href="/hosts" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+						View Hosts
+					</a>
 				</div>
 			</div>
-		{/if}
+		</div>
+	{:else}
+		<div class="bg-yellow-50 border border-yellow-200 rounded-md p-4">
+			<div class="text-center">
+				<h3 class="text-sm font-medium text-yellow-800">No dashboard data available</h3>
+				<p class="mt-2 text-sm text-yellow-700">Please try refreshing the page or check that the API server is running.</p>
+				<button
+					on:click={() => window.location.reload()}
+					class="mt-3 inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+				>
+					Refresh Page
+				</button>
+			</div>
+		</div>
 	{/if}
 </div>

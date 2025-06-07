@@ -36,6 +36,7 @@ var (
 		{Name: "protocol", Type: field.TypeString, Default: "TCP"},
 		{Name: "success", Type: field.TypeBool, Default: true},
 		{Name: "error_message", Type: field.TypeString, Nullable: true},
+		{Name: "daemon_id", Type: field.TypeString, Nullable: true},
 		{Name: "host_iperf_tests", Type: field.TypeInt, Nullable: true},
 	}
 	// IperfTestsTable holds the schema information for the "iperf_tests" table.
@@ -46,7 +47,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "iperf_tests_hosts_iperf_tests",
-				Columns:    []*schema.Column{IperfTestsColumns[10]},
+				Columns:    []*schema.Column{IperfTestsColumns[11]},
 				RefColumns: []*schema.Column{HostsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -65,6 +66,7 @@ var (
 		{Name: "isp", Type: field.TypeString, Nullable: true},
 		{Name: "external_ip", Type: field.TypeString, Nullable: true},
 		{Name: "result_url", Type: field.TypeString, Nullable: true},
+		{Name: "daemon_id", Type: field.TypeString, Nullable: true},
 	}
 	// SpeedTestsTable holds the schema information for the "speed_tests" table.
 	SpeedTestsTable = &schema.Table{

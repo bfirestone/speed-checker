@@ -232,6 +232,26 @@ func (stu *SpeedTestUpdate) ClearResultURL() *SpeedTestUpdate {
 	return stu
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (stu *SpeedTestUpdate) SetDaemonID(s string) *SpeedTestUpdate {
+	stu.mutation.SetDaemonID(s)
+	return stu
+}
+
+// SetNillableDaemonID sets the "daemon_id" field if the given value is not nil.
+func (stu *SpeedTestUpdate) SetNillableDaemonID(s *string) *SpeedTestUpdate {
+	if s != nil {
+		stu.SetDaemonID(*s)
+	}
+	return stu
+}
+
+// ClearDaemonID clears the value of the "daemon_id" field.
+func (stu *SpeedTestUpdate) ClearDaemonID() *SpeedTestUpdate {
+	stu.mutation.ClearDaemonID()
+	return stu
+}
+
 // Mutation returns the SpeedTestMutation object of the builder.
 func (stu *SpeedTestUpdate) Mutation() *SpeedTestMutation {
 	return stu.mutation
@@ -332,6 +352,12 @@ func (stu *SpeedTestUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if stu.mutation.ResultURLCleared() {
 		_spec.ClearField(speedtest.FieldResultURL, field.TypeString)
+	}
+	if value, ok := stu.mutation.DaemonID(); ok {
+		_spec.SetField(speedtest.FieldDaemonID, field.TypeString, value)
+	}
+	if stu.mutation.DaemonIDCleared() {
+		_spec.ClearField(speedtest.FieldDaemonID, field.TypeString)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, stu.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -557,6 +583,26 @@ func (stuo *SpeedTestUpdateOne) ClearResultURL() *SpeedTestUpdateOne {
 	return stuo
 }
 
+// SetDaemonID sets the "daemon_id" field.
+func (stuo *SpeedTestUpdateOne) SetDaemonID(s string) *SpeedTestUpdateOne {
+	stuo.mutation.SetDaemonID(s)
+	return stuo
+}
+
+// SetNillableDaemonID sets the "daemon_id" field if the given value is not nil.
+func (stuo *SpeedTestUpdateOne) SetNillableDaemonID(s *string) *SpeedTestUpdateOne {
+	if s != nil {
+		stuo.SetDaemonID(*s)
+	}
+	return stuo
+}
+
+// ClearDaemonID clears the value of the "daemon_id" field.
+func (stuo *SpeedTestUpdateOne) ClearDaemonID() *SpeedTestUpdateOne {
+	stuo.mutation.ClearDaemonID()
+	return stuo
+}
+
 // Mutation returns the SpeedTestMutation object of the builder.
 func (stuo *SpeedTestUpdateOne) Mutation() *SpeedTestMutation {
 	return stuo.mutation
@@ -687,6 +733,12 @@ func (stuo *SpeedTestUpdateOne) sqlSave(ctx context.Context) (_node *SpeedTest, 
 	}
 	if stuo.mutation.ResultURLCleared() {
 		_spec.ClearField(speedtest.FieldResultURL, field.TypeString)
+	}
+	if value, ok := stuo.mutation.DaemonID(); ok {
+		_spec.SetField(speedtest.FieldDaemonID, field.TypeString, value)
+	}
+	if stuo.mutation.DaemonIDCleared() {
+		_spec.ClearField(speedtest.FieldDaemonID, field.TypeString)
 	}
 	_node = &SpeedTest{config: stuo.config}
 	_spec.Assign = _node.assignValues

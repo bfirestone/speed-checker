@@ -40,6 +40,9 @@ func (IperfTest) Fields() []ent.Field {
 		field.String("error_message").
 			Optional().
 			Comment("Error message if test failed"),
+		field.String("daemon_id").
+			Optional().
+			Comment("Identifier of the daemon that performed the test"),
 	}
 }
 
